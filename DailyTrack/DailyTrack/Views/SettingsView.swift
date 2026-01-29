@@ -170,13 +170,15 @@ struct TaskEditorSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(String(localized: "Task Details")) {
+                Section {
                     TextField(String(localized: "Task Name"), text: $name)
 
                     TextField(String(localized: "Unit (e.g., hours, pages)"), text: $unit)
+                } header: {
+                    Text(String(localized: "Task Details"))
                 }
 
-                Section(String(localized: "Tracking")) {
+                Section {
                     Toggle(String(localized: "Simple Checkbox"), isOn: $isCheckbox)
 
                     if !isCheckbox {
@@ -184,28 +186,38 @@ struct TaskEditorSheet: View {
                             Text(String(localized: "Daily Benchmark"))
                             Spacer()
                             TextField("1", text: $benchmark)
+                                #if os(iOS)
                                 .keyboardType(.decimalPad)
+                                #endif
                                 .multilineTextAlignment(.trailing)
                                 .frame(width: 80)
                         }
                     }
 
                     Toggle(String(localized: "Cumulative (track total over time)"), isOn: $isCumulative)
+                } header: {
+                    Text(String(localized: "Tracking"))
                 }
 
-                Section(String(localized: "Scoring")) {
+                Section {
                     HStack {
                         Text(String(localized: "Weight"))
                         Spacer()
                         TextField("1", text: $weight)
+                            #if os(iOS)
                             .keyboardType(.decimalPad)
+                            #endif
                             .multilineTextAlignment(.trailing)
                             .frame(width: 80)
                     }
+                } header: {
+                    Text(String(localized: "Scoring"))
                 } footer: {
                     Text(String(localized: "Higher weight means this task counts more toward your daily score."))
                 }
             }
+            .formStyle(.grouped)
+            .frame(minWidth: 500, minHeight: 450)
             .navigationTitle(isEditing ? String(localized: "Edit Task") : String(localized: "New Task"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)

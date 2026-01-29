@@ -149,9 +149,17 @@ struct StatCard: View {
 struct TrendChartView: View {
     let scores: [(date: String, score: Double)]
 
+    @State private var selectedDate: Date?
+
     private let dateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    private let displayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .medium
         return f
     }()
 
@@ -160,6 +168,13 @@ struct TrendChartView: View {
             guard let date = dateFormatter.date(from: item.date) else { return nil }
             return (date, item.score)
         }
+    }
+
+    var selectedItem: (date: Date, score: Double)? {
+        guard let selected = selectedDate else { return nil }
+        return chartData.min(by: {
+            abs($0.date.timeIntervalSince(selected)) < abs($1.date.timeIntervalSince(selected))
+        })
     }
 
     var body: some View {
@@ -201,6 +216,25 @@ struct TrendChartView: View {
                     )
                     .foregroundStyle(.blue)
                     .symbolSize(20)
+
+                    if let selected = selectedItem, selected.date == item.date {
+                        RuleMark(x: .value("Date", selected.date))
+                            .foregroundStyle(.gray.opacity(0.5))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
+                            .annotation(position: .top, alignment: .center) {
+                                VStack(spacing: 4) {
+                                    Text(displayFormatter.string(from: selected.date))
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                    Text("\(Int(selected.score * 100))%")
+                                        .font(.caption)
+                                        .fontWeight(.bold)
+                                }
+                                .padding(8)
+                                .background(.regularMaterial)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                    }
                 }
                 .chartYScale(domain: 0...1)
                 .chartYAxis {
@@ -213,6 +247,7 @@ struct TrendChartView: View {
                         AxisGridLine()
                     }
                 }
+                .chartXSelection(value: $selectedDate)
             }
         }
     }
@@ -233,14 +268,21 @@ struct CalendarHeatmapView: View {
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
 
-    var dates: [Date] {
+    var dates: [Date?] {
+        var cal = Calendar(identifier: .gregorian)
+        cal.firstWeekday = 1 // Sunday = 1
         let end = Date()
-        let start = Calendar.current.date(byAdding: .day, value: -period.days, to: end)!
+        let start = cal.date(byAdding: .day, value: -period.days, to: end)!
+
+        // Pad start to align with Sunday
+        let startWeekday = cal.component(.weekday, from: start) // 1=Sun, 7=Sat
+        let padCount = startWeekday - 1 // days to pad before start
+
+        var result: [Date?] = Array(repeating: nil, count: padCount)
         var current = start
-        var result: [Date] = []
         while current <= end {
             result.append(current)
-            current = Calendar.current.date(byAdding: .day, value: 1, to: current)!
+            current = cal.date(byAdding: .day, value: 1, to: current)!
         }
         return result
     }
@@ -251,21 +293,26 @@ struct CalendarHeatmapView: View {
                 .font(.headline)
 
             LazyVGrid(columns: columns, spacing: 4) {
-                ForEach(dates, id: \.self) { date in
-                    let dateStr = dateFormatter.string(from: date)
-                    let score = data[dateStr]
+                ForEach(Array(dates.enumerated()), id: \.offset) { _, date in
+                    if let date = date {
+                        let dateStr = dateFormatter.string(from: date)
+                        let score = data[dateStr]
 
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(colorForScore(score))
-                        .aspectRatio(1, contentMode: .fit)
-                        .overlay {
-                            Text("\(Calendar.current.component(.day, from: date))")
-                                .font(.system(size: 8))
-                                .foregroundStyle(score != nil ? .white : .secondary)
-                        }
-                        .onTapGesture {
-                            onDateTap(dateStr)
-                        }
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(colorForScore(score))
+                            .aspectRatio(1, contentMode: .fit)
+                            .overlay {
+                                Text("\(Calendar.current.component(.day, from: date))")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(score != nil ? .white : .secondary)
+                            }
+                            .onTapGesture {
+                                onDateTap(dateStr)
+                            }
+                    } else {
+                        Color.clear
+                            .aspectRatio(1, contentMode: .fit)
+                    }
                 }
             }
         }

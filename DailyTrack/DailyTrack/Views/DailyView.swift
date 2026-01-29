@@ -181,7 +181,9 @@ struct TaskRowView: View {
                     }
                 } else {
                     TextField("0", text: $inputText)
+                        #if os(iOS)
                         .keyboardType(.decimalPad)
+                        #endif
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 80)
                         .focused($isFocused)
