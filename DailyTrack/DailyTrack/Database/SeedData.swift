@@ -1,16 +1,22 @@
 import Foundation
+import SwiftData
 
-/// Seeds initial task definitions from the Excel data on first launch.
+/// Seeds initial task definitions on first launch.
 struct SeedData {
-    static func seedIfNeeded() {
-        let db = DatabaseManager.shared
-        let existingTasks = db.fetchAllTasks(activeOnly: false)
+    static func seedIfNeeded(context: ModelContext) {
+        let descriptor = FetchDescriptor<TaskDefinition>()
+        let existingTasks = (try? context.fetch(descriptor)) ?? []
 
         // Only seed if database is empty
         guard existingTasks.isEmpty else { return }
 
+        // Reset sync timestamp so fresh seed doesn't conflict
+        UserDefaults.standard.removeObject(forKey: "lastSyncTimestamp")
+
+        // Deterministic IDs so all devices create identical tasks
         let initialTasks: [TaskDefinition] = [
             TaskDefinition(
+                id: "seed-nebenprojekt",
                 name: "Nebenprojekt",
                 benchmark: 1.0,
                 unit: NSLocalizedString("hour", comment: ""),
@@ -20,6 +26,7 @@ struct SeedData {
                 sortOrder: 0
             ),
             TaskDefinition(
+                id: "seed-aktuarwissenschaft",
                 name: "Aktuarwissenschaft",
                 benchmark: 1.0,
                 unit: NSLocalizedString("hour", comment: ""),
@@ -29,6 +36,7 @@ struct SeedData {
                 sortOrder: 1
             ),
             TaskDefinition(
+                id: "seed-putzen",
                 name: "Putzen",
                 benchmark: 1.0,
                 unit: NSLocalizedString("chore", comment: ""),
@@ -38,6 +46,7 @@ struct SeedData {
                 sortOrder: 2
             ),
             TaskDefinition(
+                id: "seed-bewerben",
                 name: "Bewerben",
                 benchmark: 1.0,
                 unit: NSLocalizedString("application", comment: ""),
@@ -47,6 +56,7 @@ struct SeedData {
                 sortOrder: 3
             ),
             TaskDefinition(
+                id: "seed-municipal-analytics",
                 name: "Municipal Analytics",
                 benchmark: 4.0,
                 unit: NSLocalizedString("hours", comment: ""),
@@ -56,6 +66,7 @@ struct SeedData {
                 sortOrder: 4
             ),
             TaskDefinition(
+                id: "seed-training",
                 name: "Training",
                 benchmark: 1.0,
                 unit: NSLocalizedString("workout", comment: ""),
@@ -65,6 +76,7 @@ struct SeedData {
                 sortOrder: 5
             ),
             TaskDefinition(
+                id: "seed-schach-lesen",
                 name: "Schach/Lesen",
                 benchmark: 1.0,
                 unit: NSLocalizedString("game/chapter", comment: ""),
@@ -76,19 +88,20 @@ struct SeedData {
         ]
 
         for task in initialTasks {
-            db.insertTask(task)
+            context.insert(task)
         }
 
-        // Seed historical data from Excel (Jan 5-23, 2026)
-        seedHistoricalEntries()
+        try? context.save()
+
+        // Seed historical data
+        seedHistoricalEntries(context: context)
     }
 
-    private static func seedHistoricalEntries() {
-        let db = DatabaseManager.shared
-        let tasks = db.fetchAllTasks()
-        let taskMap = Dictionary(uniqueKeysWithValues: tasks.map { ($0.name, $0.id) })
+    private static func seedHistoricalEntries(context: ModelContext) {
+        let descriptor = FetchDescriptor<TaskDefinition>()
+        let tasks = (try? context.fetch(descriptor)) ?? []
+        let taskMap = Dictionary(tasks.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
 
-        // Data from "Aufgaben Daten" sheet: [date: [taskName: value]]
         let historicalData: [(date: String, entries: [(name: String, value: Double)])] = [
             ("2026-01-05", [("Nebenprojekt", 0), ("Aktuarwissenschaft", 0), ("Putzen", 0), ("Bewerben", 0), ("Municipal Analytics", 4.25), ("Training", 0), ("Schach/Lesen", 0)]),
             ("2026-01-06", [("Nebenprojekt", 0), ("Aktuarwissenschaft", 0), ("Putzen", 1), ("Bewerben", 0), ("Municipal Analytics", 6.25), ("Training", 0), ("Schach/Lesen", 1)]),
@@ -109,14 +122,18 @@ struct SeedData {
 
         for day in historicalData {
             for entry in day.entries {
-                guard let taskId = taskMap[entry.name] else { continue }
+                guard let task = taskMap[entry.name] else { continue }
+                let entryId = "seed-\(entry.name.lowercased().replacingOccurrences(of: " ", with: "-"))-\(day.date)"
                 let dailyEntry = DailyEntry(
-                    taskId: taskId,
+                    id: entryId,
+                    task: task,
                     date: day.date,
                     value: entry.value
                 )
-                db.upsertEntry(dailyEntry)
+                context.insert(dailyEntry)
             }
         }
+
+        try? context.save()
     }
 }

@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import SwiftData
 #if canImport(UniformTypeIdentifiers)
 import UniformTypeIdentifiers
 #endif
@@ -12,54 +13,92 @@ final class SettingsViewModel {
     var showingAddSheet = false
     var showingEditSheet = false
 
-    private let db = DatabaseManager.shared
+    private var modelContext: ModelContext?
 
-    func loadTasks() {
-        tasks = db.fetchAllTasks(activeOnly: false)
+    func loadTasks(context: ModelContext) {
+        self.modelContext = context
+        let descriptor = FetchDescriptor<TaskDefinition>(
+            predicate: #Predicate { $0.deleted == false },
+            sortBy: [SortDescriptor(\.sortOrder), SortDescriptor(\.name)]
+        )
+        tasks = (try? context.fetch(descriptor)) ?? []
     }
 
     func addTask(_ task: TaskDefinition) {
-        var newTask = task
-        newTask.sortOrder = tasks.count
-        db.insertTask(newTask)
-        loadTasks()
+        guard let context = modelContext else { return }
+        task.sortOrder = tasks.count
+        context.insert(task)
+        try? context.save()
+        loadTasks(context: context)
     }
 
     func updateTask(_ task: TaskDefinition) {
-        db.insertTask(task)
-        loadTasks()
+        guard let context = modelContext else { return }
+        task.markUpdated()
+        try? context.save()
+        loadTasks(context: context)
     }
 
     func deleteTask(_ task: TaskDefinition) {
-        db.deleteTask(id: task.id)
-        loadTasks()
+        guard let context = modelContext else { return }
+        task.deleted = true
+        task.markUpdated()
+        // Also soft-delete entries
+        if let entries = task.entries {
+            for entry in entries {
+                entry.deleted = true
+                entry.markUpdated()
+            }
+        }
+        try? context.save()
+        loadTasks(context: context)
     }
 
     func moveTask(from source: IndexSet, to destination: Int) {
+        guard let context = modelContext else { return }
         tasks.move(fromOffsets: source, toOffset: destination)
         for (index, task) in tasks.enumerated() {
-            var updated = task
-            updated.sortOrder = index
-            db.insertTask(updated)
+            task.sortOrder = index
+            task.markUpdated()
         }
+        try? context.save()
     }
 
     func toggleActive(_ task: TaskDefinition) {
-        var updated = task
-        updated.isActive.toggle()
-        db.insertTask(updated)
-        loadTasks()
+        guard let context = modelContext else { return }
+        task.isActive.toggle()
+        task.markUpdated()
+        try? context.save()
+        loadTasks(context: context)
     }
 
     // MARK: - JSON Export/Import
 
     func exportJSON() -> Data? {
-        db.exportTasksAsJSON()
+        let codableTasks = tasks.map { CodableTaskDefinition(from: $0) }
+        return try? JSONEncoder().encode(codableTasks)
     }
 
     func importJSON(_ data: Data) {
-        db.importTasksFromJSON(data)
-        loadTasks()
+        guard let context = modelContext else { return }
+        guard let codableTasks = try? JSONDecoder().decode([CodableTaskDefinition].self, from: data) else { return }
+        for ct in codableTasks {
+            let task = TaskDefinition(
+                id: ct.id,
+                name: ct.name,
+                benchmark: ct.benchmark,
+                unit: ct.unit,
+                weight: ct.weight,
+                isCumulative: ct.isCumulative,
+                isCheckbox: ct.isCheckbox,
+                sortOrder: ct.sortOrder,
+                isActive: ct.isActive,
+                createdAt: ct.createdAt
+            )
+            context.insert(task)
+        }
+        try? context.save()
+        loadTasks(context: context)
     }
 
     func configFilePath() -> URL {
@@ -69,6 +108,8 @@ final class SettingsViewModel {
 
     func saveConfigFile() {
         guard let data = exportJSON() else { return }
+        let dir = configFilePath().deletingLastPathComponent()
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         try? data.write(to: configFilePath())
     }
 

@@ -1,7 +1,10 @@
 import SwiftUI
+import SwiftData
 
 /// Settings view for managing task definitions.
 struct SettingsView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(SyncManager.self) private var syncManager
     @State private var viewModel = SettingsViewModel()
 
     var body: some View {
@@ -27,6 +30,60 @@ struct SettingsView: View {
                     }
                 } header: {
                     Text("Tasks")
+                }
+
+                // Cloud Sync section
+                Section {
+                    @Bindable var sync = syncManager
+                    TextField(String(localized: "API URL"), text: $sync.apiURL)
+                        #if os(iOS)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        #endif
+                        .autocorrectionDisabled()
+
+                    SecureField(String(localized: "Sync Token"), text: $sync.syncToken)
+
+                    HStack {
+                        Button {
+                            Task {
+                                await syncManager.sync(context: modelContext)
+                                viewModel.loadTasks(context: modelContext)
+                            }
+                        } label: {
+                            Label(String(localized: "Sync Now"), systemImage: "arrow.triangle.2.circlepath")
+                        }
+                        .disabled(syncManager.isSyncing || !syncManager.syncEnabled)
+
+                        Spacer()
+
+                        if syncManager.isSyncing {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                    }
+
+                    if let lastSync = syncManager.lastSyncDate {
+                        HStack {
+                            Text(String(localized: "Last sync"))
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text(lastSync, style: .relative)
+                                .foregroundStyle(.secondary)
+                        }
+                        .font(.caption)
+                    }
+
+                    if let error = syncManager.lastError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                } header: {
+                    Text(String(localized: "Cloud Sync"))
+                } footer: {
+                    Text(String(localized: "Enter your Cloudflare Worker URL and token to sync between devices."))
+                        .font(.caption2)
                 }
 
                 Section {
@@ -82,7 +139,7 @@ struct SettingsView: View {
                 }
             }
             .onAppear {
-                viewModel.loadTasks()
+                viewModel.loadTasks(context: modelContext)
             }
         }
     }
@@ -217,7 +274,9 @@ struct TaskEditorSheet: View {
                 }
             }
             .formStyle(.grouped)
+            #if os(macOS)
             .frame(minWidth: 500, minHeight: 450)
+            #endif
             .navigationTitle(isEditing ? String(localized: "Edit Task") : String(localized: "New Task"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -248,23 +307,31 @@ struct TaskEditorSheet: View {
         let benchVal = Double(benchmark.replacingOccurrences(of: ",", with: ".")) ?? 1.0
         let weightVal = Double(weight.replacingOccurrences(of: ",", with: ".")) ?? 1.0
 
-        let result = TaskDefinition(
-            id: task?.id ?? UUID().uuidString,
-            name: name.trimmingCharacters(in: .whitespaces),
-            benchmark: benchVal,
-            unit: unit.trimmingCharacters(in: .whitespaces),
-            weight: weightVal,
-            isCumulative: isCumulative,
-            isCheckbox: isCheckbox,
-            sortOrder: task?.sortOrder ?? 0,
-            isActive: task?.isActive ?? true,
-            createdAt: task?.createdAt ?? ISO8601DateFormatter().string(from: Date())
-        )
-        onSave(result)
+        if let existing = task {
+            // Update existing managed object
+            existing.name = name.trimmingCharacters(in: .whitespaces)
+            existing.benchmark = benchVal
+            existing.unit = unit.trimmingCharacters(in: .whitespaces)
+            existing.weight = weightVal
+            existing.isCumulative = isCumulative
+            existing.isCheckbox = isCheckbox
+            onSave(existing)
+        } else {
+            let result = TaskDefinition(
+                name: name.trimmingCharacters(in: .whitespaces),
+                benchmark: benchVal,
+                unit: unit.trimmingCharacters(in: .whitespaces),
+                weight: weightVal,
+                isCumulative: isCumulative,
+                isCheckbox: isCheckbox
+            )
+            onSave(result)
+        }
         dismiss()
     }
 }
 
 #Preview {
     SettingsView()
+        .modelContainer(for: [TaskDefinition.self, DailyEntry.self], inMemory: true)
 }

@@ -33,6 +33,9 @@
     "1" : {
 
     },
+    "API URL" : {
+
+    },
     "application" : {
       "localizations" : {
         "de" : {
@@ -102,6 +105,9 @@
           }
         }
       }
+    },
+    "Cloud Sync" : {
+
     },
     "Complete" : {
       "localizations" : {
@@ -222,6 +228,9 @@
         }
       }
     },
+    "Enter your Cloudflare Worker URL and token to sync between devices." : {
+
+    },
     "Export Tasks to JSON" : {
       "localizations" : {
         "de" : {
@@ -301,6 +310,9 @@
           }
         }
       }
+    },
+    "Last sync" : {
+
     },
     "Month" : {
       "localizations" : {
@@ -407,6 +419,12 @@
           }
         }
       }
+    },
+    "Sync Now" : {
+
+    },
+    "Sync Token" : {
+
     },
     "Task Breakdown — %@" : {
 

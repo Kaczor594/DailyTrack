@@ -1,7 +1,10 @@
 import SwiftUI
+import SwiftData
 
 /// Primary view: shows today's tasks and their progress.
 struct DailyView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(SyncManager.self) private var syncManager
     @State private var viewModel = DailyViewModel()
 
     var body: some View {
@@ -52,9 +55,11 @@ struct DailyView: View {
                                 progress: progress,
                                 onValueChanged: { value in
                                     viewModel.updateValue(for: progress.task.id, value: value)
+                                    syncManager.debouncedSync(context: modelContext)
                                 },
                                 onToggle: {
                                     viewModel.toggleCheckbox(for: progress.task.id)
+                                    syncManager.debouncedSync(context: modelContext)
                                 }
                             )
                         }
@@ -64,8 +69,22 @@ struct DailyView: View {
                 .padding(.vertical)
             }
             .navigationTitle("DailyTrack")
+            #if os(iOS)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button(String(localized: "Done")) {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
+                    .fontWeight(.semibold)
+                }
+            }
+            #endif
             .onAppear {
-                viewModel.loadData()
+                viewModel.loadData(context: modelContext)
+            }
+            .onChange(of: syncManager.syncVersion) { _, _ in
+                viewModel.loadData(context: modelContext)
             }
         }
     }
@@ -143,7 +162,7 @@ struct TaskRowView: View {
                 Spacer()
 
                 // Completion percentage badge
-                Text("\(Int(min(progress.dailyRatio, 1.0) * 100))%")
+                Text("\(Int(progress.dailyRatio * 100))%")
                     .font(.caption)
                     .fontWeight(.semibold)
                     .padding(.horizontal, 8)
@@ -231,6 +250,7 @@ struct TaskRowView: View {
         case 0: return .gray
         case 0..<0.5: return .red
         case 0.5..<1.0: return .orange
+        case 1.0...: return .green
         default: return .green
         }
     }
@@ -243,4 +263,5 @@ struct TaskRowView: View {
 
 #Preview {
     DailyView()
+        .modelContainer(for: [TaskDefinition.self, DailyEntry.self], inMemory: true)
 }

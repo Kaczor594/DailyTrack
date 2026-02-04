@@ -1,8 +1,11 @@
 import SwiftUI
+import SwiftData
 import Charts
 
 /// History view: browse past days and see trends.
 struct HistoryView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(SyncManager.self) private var syncManager
     @State private var viewModel = HistoryViewModel()
     @State private var selectedDate: String?
 
@@ -27,7 +30,7 @@ struct HistoryView: View {
                     .pickerStyle(.segmented)
                     .padding(.horizontal)
                     .onChange(of: viewModel.selectedPeriod) { _, _ in
-                        viewModel.loadData()
+                        viewModel.loadData(context: modelContext)
                     }
 
                     // Trend chart
@@ -58,7 +61,10 @@ struct HistoryView: View {
             }
             .navigationTitle(String(localized: "History"))
             .onAppear {
-                viewModel.loadData()
+                viewModel.loadData(context: modelContext)
+            }
+            .onChange(of: syncManager.syncVersion) { _, _ in
+                viewModel.loadData(context: modelContext)
             }
         }
     }
@@ -385,4 +391,5 @@ struct TaskBreakdownView: View {
 
 #Preview {
     HistoryView()
+        .modelContainer(for: [TaskDefinition.self, DailyEntry.self], inMemory: true)
 }

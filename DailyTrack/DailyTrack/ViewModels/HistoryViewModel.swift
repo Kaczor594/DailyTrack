@@ -1,16 +1,18 @@
 import Foundation
+import SwiftData
 
 /// View model for the history and analytics views.
 @Observable
 final class HistoryViewModel {
     var dailyScores: [(date: String, score: Double)] = []
-    var taskHistory: [String: [DailyEntry]] = [:]  // taskId -> entries
     var tasks: [TaskDefinition] = []
     var selectedPeriod: Period = .month
     var currentStreak: Int = 0
     var bestStreak: Int = 0
     var averageScore: Double = 0
     var totalDaysTracked: Int = 0
+
+    private var modelContext: ModelContext?
 
     enum Period: String, CaseIterable {
         case week, month, quarter, year
@@ -34,37 +36,72 @@ final class HistoryViewModel {
         }
     }
 
-    private let db = DatabaseManager.shared
     private let dateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         return f
     }()
 
-    func loadData() {
-        tasks = db.fetchAllTasks()
+    func loadData(context: ModelContext) {
+        self.modelContext = context
+
+        tasks = fetchActiveTasks(context: context)
+        let nonCumulativeTasks = tasks.filter { !$0.isCumulative }
+        let totalWeight = nonCumulativeTasks.reduce(0.0) { $0 + $1.weight }
 
         let endDate = dateFormatter.string(from: Date())
-        let startDate = dateFormatter.string(
-            from: Calendar.current.date(byAdding: .day, value: -selectedPeriod.days, to: Date())!
-        )
+        let startDateValue = Calendar.current.date(byAdding: .day, value: -selectedPeriod.days, to: Date())!
+        let startDate = dateFormatter.string(from: startDateValue)
 
-        dailyScores = db.dailyScores(from: startDate, to: endDate)
-        currentStreak = db.currentStreak()
+        // Fetch entries in date range
+        let allEntries: [DailyEntry] = (try? context.fetch(FetchDescriptor<DailyEntry>(
+            predicate: #Predicate { $0.date >= startDate && $0.date <= endDate && $0.deleted == false }
+        ))) ?? []
 
-        // Calculate stats
+        // Group by date and compute scores
+        var dateEntries: [String: [DailyEntry]] = [:]
+        for entry in allEntries {
+            dateEntries[entry.date, default: []].append(entry)
+        }
+
+        dailyScores = dateEntries.map { (date, entries) in
+            guard totalWeight > 0 else { return (date, 0.0) }
+            let entryMap = Dictionary(entries.compactMap { e in
+                e.task.map { ($0.id, e) }
+            }, uniquingKeysWith: { first, _ in first })
+            var weightedSum = 0.0
+            for task in nonCumulativeTasks {
+                let value = entryMap[task.id]?.value ?? 0
+                let ratio: Double
+                if task.isCheckbox {
+                    ratio = value > 0 ? 1.0 : 0.0
+                } else {
+                    ratio = task.benchmark > 0 ? min(value / task.benchmark, 1.0) : 0
+                }
+                weightedSum += ratio * task.weight
+            }
+            return (date, weightedSum / totalWeight)
+        }.sorted { $0.date < $1.date }
+
+        // Stats
         if !dailyScores.isEmpty {
             averageScore = dailyScores.reduce(0) { $0 + $1.score } / Double(dailyScores.count)
             totalDaysTracked = dailyScores.count
+        } else {
+            averageScore = 0
+            totalDaysTracked = 0
         }
 
-        // Load per-task history
-        for task in tasks {
-            taskHistory[task.id] = db.fetchEntries(forTask: task.id)
-        }
-
-        // Calculate best streak
+        currentStreak = computeCurrentStreak(context: context)
         bestStreak = calculateBestStreak()
+    }
+
+    private func fetchActiveTasks(context: ModelContext) -> [TaskDefinition] {
+        let descriptor = FetchDescriptor<TaskDefinition>(
+            predicate: #Predicate { $0.isActive == true && $0.deleted == false },
+            sortBy: [SortDescriptor(\.sortOrder), SortDescriptor(\.name)]
+        )
+        return (try? context.fetch(descriptor)) ?? []
     }
 
     private func calculateBestStreak() -> Int {
@@ -97,15 +134,63 @@ final class HistoryViewModel {
         return best
     }
 
+    private func computeCurrentStreak(context: ModelContext, threshold: Double = 0.7) -> Int {
+        let nonCumulativeTasks = tasks.filter { !$0.isCumulative }
+        guard !nonCumulativeTasks.isEmpty else { return 0 }
+        let totalWeight = nonCumulativeTasks.reduce(0.0) { $0 + $1.weight }
+        guard totalWeight > 0 else { return 0 }
+
+        let allEntries: [DailyEntry] = (try? context.fetch(FetchDescriptor<DailyEntry>())) ?? []
+        var dateEntries: [String: [DailyEntry]] = [:]
+        for entry in allEntries {
+            dateEntries[entry.date, default: []].append(entry)
+        }
+
+        var dateScores: [String: Double] = [:]
+        for (date, entries) in dateEntries {
+            let entryMap = Dictionary(entries.compactMap { e in
+                e.task.map { ($0.id, e) }
+            }, uniquingKeysWith: { first, _ in first })
+            var weightedSum = 0.0
+            for task in nonCumulativeTasks {
+                let value = entryMap[task.id]?.value ?? 0
+                let ratio: Double
+                if task.isCheckbox {
+                    ratio = value > 0 ? 1.0 : 0.0
+                } else {
+                    ratio = task.benchmark > 0 ? min(value / task.benchmark, 1.0) : 0
+                }
+                weightedSum += ratio * task.weight
+            }
+            dateScores[date] = weightedSum / totalWeight
+        }
+
+        var streak = 0
+        var expectedDate = Calendar.current.startOfDay(for: Date())
+        while true {
+            let dateStr = dateFormatter.string(from: expectedDate)
+            guard let score = dateScores[dateStr], score >= threshold else { break }
+            streak += 1
+            expectedDate = Calendar.current.date(byAdding: .day, value: -1, to: expectedDate)!
+        }
+        return streak
+    }
+
     /// Calendar heatmap data: date string -> score (0 to 1)
     func heatmapData() -> [String: Double] {
-        Dictionary(uniqueKeysWithValues: dailyScores.map { ($0.date, $0.score) })
+        Dictionary(dailyScores.map { ($0.date, $0.score) }, uniquingKeysWith: { first, _ in first })
     }
 
     /// Per-task scores for a given date
     func taskScores(for date: String) -> [(task: TaskDefinition, value: Double, ratio: Double)] {
-        let entries = db.fetchEntries(for: date)
-        let entryMap = Dictionary(uniqueKeysWithValues: entries.map { ($0.taskId, $0) })
+        guard let context = modelContext else { return [] }
+
+        let entries: [DailyEntry] = (try? context.fetch(FetchDescriptor<DailyEntry>(
+            predicate: #Predicate { $0.date == date && $0.deleted == false }
+        ))) ?? []
+        let entryMap = Dictionary(entries.compactMap { e in
+            e.task.map { ($0.id, e) }
+        }, uniquingKeysWith: { first, _ in first })
 
         return tasks.map { task in
             let value = entryMap[task.id]?.value ?? 0
