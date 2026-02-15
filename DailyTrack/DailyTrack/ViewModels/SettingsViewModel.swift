@@ -58,8 +58,10 @@ final class SettingsViewModel {
         guard let context = modelContext else { return }
         tasks.move(fromOffsets: source, toOffset: destination)
         for (index, task) in tasks.enumerated() {
-            task.sortOrder = index
-            task.markUpdated()
+            if task.sortOrder != index {
+                task.sortOrder = index
+                task.markUpdated()
+            }
         }
         try? context.save()
     }

@@ -180,7 +180,7 @@ final class DailyViewModel {
                 if task.isCheckbox {
                     ratio = value > 0 ? 1.0 : 0.0
                 } else {
-                    ratio = task.benchmark > 0 ? min(value / task.benchmark, 1.0) : 0
+                    ratio = task.benchmark > 0 ? value / task.benchmark : 0
                 }
                 weightedSum += ratio * task.weight
             }

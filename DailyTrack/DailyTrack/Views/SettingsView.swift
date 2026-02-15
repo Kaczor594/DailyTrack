@@ -14,6 +14,7 @@ struct SettingsView: View {
                     ForEach(viewModel.tasks) { task in
                         TaskDefinitionRow(task: task, onToggleActive: {
                             viewModel.toggleActive(task)
+                            syncManager.debouncedSync(context: modelContext)
                         })
                         .onTapGesture {
                             viewModel.editingTask = task
@@ -24,9 +25,11 @@ struct SettingsView: View {
                         for index in indexSet {
                             viewModel.deleteTask(viewModel.tasks[index])
                         }
+                        syncManager.debouncedSync(context: modelContext)
                     }
                     .onMove { source, destination in
                         viewModel.moveTask(from: source, to: destination)
+                        syncManager.debouncedSync(context: modelContext)
                     }
                 } header: {
                     Text("Tasks")
@@ -125,6 +128,7 @@ struct SettingsView: View {
                     task: nil,
                     onSave: { task in
                         viewModel.addTask(task)
+                        syncManager.debouncedSync(context: modelContext)
                     }
                 )
             }
@@ -134,6 +138,7 @@ struct SettingsView: View {
                         task: task,
                         onSave: { updated in
                             viewModel.updateTask(updated)
+                            syncManager.debouncedSync(context: modelContext)
                         }
                     )
                 }

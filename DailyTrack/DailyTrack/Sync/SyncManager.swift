@@ -71,7 +71,7 @@ final class SyncManager {
         await MainActor.run { isSyncing = true; lastError = nil }
 
         do {
-            // 1. Push local changes
+            // 1. Push local changes (including all deletions)
             try await pushChanges(context: context)
 
             // 2. Pull remote changes
@@ -96,9 +96,21 @@ final class SyncManager {
         let since = lastSyncTimestamp
 
         // Fetch locally modified tasks
-        let allTasks: [TaskDefinition] = try context.fetch(FetchDescriptor<TaskDefinition>(
+        let recentTasks: [TaskDefinition] = try context.fetch(FetchDescriptor<TaskDefinition>(
             predicate: #Predicate { $0.updatedAt > since }
         ))
+
+        // Always re-push all locally deleted tasks to ensure the server
+        // knows about deletions, even if they were deleted before the last sync.
+        let deletedTasks: [TaskDefinition] = try context.fetch(FetchDescriptor<TaskDefinition>(
+            predicate: #Predicate { $0.deleted == true }
+        ))
+
+        // Merge both lists, deduplicating by ID
+        var taskMap: [String: TaskDefinition] = [:]
+        for task in recentTasks { taskMap[task.id] = task }
+        for task in deletedTasks { taskMap[task.id] = task }
+        let allTasks = Array(taskMap.values)
 
         // Fetch locally modified entries
         let allEntries: [DailyEntry] = try context.fetch(FetchDescriptor<DailyEntry>(
@@ -144,6 +156,34 @@ final class SyncManager {
         }
     }
 
+    // MARK: - Reconcile
+
+    /// Tells the server which task IDs are active locally.
+    /// The server marks any task NOT in this list as deleted,
+    /// preventing stale tasks from being pulled back.
+    private func reconcile(context: ModelContext) async throws {
+        let activeTasks: [TaskDefinition] = try context.fetch(FetchDescriptor<TaskDefinition>(
+            predicate: #Predicate { $0.deleted == false }
+        ))
+
+        let activeIds = activeTasks.map { $0.id }
+        guard !activeIds.isEmpty else { return }
+
+        let payload: [String: Any] = ["active_task_ids": activeIds]
+        let jsonData = try JSONSerialization.data(withJSONObject: payload)
+
+        var request = URLRequest(url: URL(string: "\(apiURL)/reconcile")!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(syncToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonData
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            throw SyncError.reconcileFailed
+        }
+    }
+
     // MARK: - Pull
 
     private func pullChanges(context: ModelContext) async throws {
@@ -168,7 +208,26 @@ final class SyncManager {
             ))
 
             if let local = existing.first {
-                // Last-write-wins
+                // Deletion wins: never resurrect a locally deleted task
+                if local.deleted && !remoteTask.deleted {
+                    continue
+                }
+
+                // Remote deletion always wins regardless of timestamps
+                if remoteTask.deleted && !local.deleted {
+                    local.deleted = true
+                    local.updatedAt = remoteTask.updatedAt
+                    // Also soft-delete associated entries
+                    if let entries = local.entries {
+                        for entry in entries {
+                            entry.deleted = true
+                            entry.markUpdated()
+                        }
+                    }
+                    continue
+                }
+
+                // Last-write-wins for non-deletion updates
                 if remoteTask.updatedAt > local.updatedAt {
                     local.name = remoteTask.name
                     local.benchmark = remoteTask.benchmark
@@ -182,6 +241,21 @@ final class SyncManager {
                     local.deleted = remoteTask.deleted
                 }
             } else {
+                // Task doesn't exist locally.
+                // Skip if already deleted on server — no need to insert.
+                if remoteTask.deleted {
+                    continue
+                }
+
+                // If we have synced before (not a fresh device), and this task
+                // was created before our last sync, we should have received it
+                // previously. The fact that we don't have it means it was
+                // deleted locally. Don't re-insert stale tasks.
+                let isFirstSync = since == "1970-01-01T00:00:00Z"
+                if !isFirstSync && remoteTask.createdAt < since {
+                    continue
+                }
+
                 let newTask = TaskDefinition(
                     id: remoteTask.id,
                     name: remoteTask.name,
@@ -208,6 +282,18 @@ final class SyncManager {
             ))
 
             if let local = existing.first {
+                // Deletion wins: never resurrect a locally deleted entry
+                if local.deleted && !remoteEntry.deleted {
+                    continue
+                }
+
+                // Remote deletion always wins regardless of timestamps
+                if remoteEntry.deleted && !local.deleted {
+                    local.deleted = true
+                    local.updatedAt = remoteEntry.updatedAt
+                    continue
+                }
+
                 if remoteEntry.updatedAt > local.updatedAt {
                     local.value = remoteEntry.value
                     local.notes = remoteEntry.notes
@@ -224,6 +310,17 @@ final class SyncManager {
                     }
                 }
             } else {
+                // Skip deleted entries — no need to insert
+                if remoteEntry.deleted {
+                    continue
+                }
+
+                // Skip stale entries (see task logic above)
+                let isFirstSync = since == "1970-01-01T00:00:00Z"
+                if !isFirstSync && remoteEntry.updatedAt < since {
+                    continue
+                }
+
                 // Find the parent task
                 let taskId = remoteEntry.taskId
                 let tasks: [TaskDefinition] = (try? context.fetch(FetchDescriptor<TaskDefinition>(
@@ -248,12 +345,13 @@ final class SyncManager {
     }
 
     enum SyncError: LocalizedError {
-        case pushFailed, pullFailed
+        case pushFailed, pullFailed, reconcileFailed
 
         var errorDescription: String? {
             switch self {
             case .pushFailed: return "Failed to push changes to server"
             case .pullFailed: return "Failed to pull changes from server"
+            case .reconcileFailed: return "Failed to reconcile with server"
             }
         }
     }
