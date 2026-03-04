@@ -22,6 +22,14 @@ struct WidgetTaskItem: Identifiable {
     let value: Double
 }
 
+// MARK: - Recent Day Score (for large widget history)
+
+struct RecentDayScore: Identifiable {
+    let id: String // date string
+    let label: String // short day label (e.g. "Mon")
+    let score: Double
+}
+
 // MARK: - Timeline Entry
 
 struct DailyTrackEntry: TimelineEntry {
@@ -29,6 +37,7 @@ struct DailyTrackEntry: TimelineEntry {
     let score: Double
     let streak: Int
     let tasks: [WidgetTaskItem]
+    let recentScores: [RecentDayScore] // last 5 days (not including today)
 
     static var placeholder: DailyTrackEntry {
         DailyTrackEntry(
@@ -40,6 +49,13 @@ struct DailyTrackEntry: TimelineEntry {
                 WidgetTaskItem(id: "2", name: "Read", isCheckbox: false, isCompleted: false, ratio: 0.5, benchmark: 30, value: 15),
                 WidgetTaskItem(id: "3", name: "Meditate", isCheckbox: true, isCompleted: false, ratio: 0.0, benchmark: 1, value: 0),
                 WidgetTaskItem(id: "4", name: "Write", isCheckbox: false, isCompleted: false, ratio: 0.8, benchmark: 500, value: 400)
+            ],
+            recentScores: [
+                RecentDayScore(id: "2026-02-27", label: "Thu", score: 0.9),
+                RecentDayScore(id: "2026-02-28", label: "Fri", score: 0.6),
+                RecentDayScore(id: "2026-03-01", label: "Sat", score: 0.85),
+                RecentDayScore(id: "2026-03-02", label: "Sun", score: 0.4),
+                RecentDayScore(id: "2026-03-03", label: "Mon", score: 0.72)
             ]
         )
     }
@@ -140,16 +156,19 @@ struct DailyTrackTimelineProvider: TimelineProvider {
             }
 
             let score = totalWeight > 0 ? weightedSum / totalWeight : 0
-            let streak = computeStreak(context: context, tasks: tasks.filter { !$0.isCumulative })
+            let nonCumulativeTasks = tasks.filter { !$0.isCumulative }
+            let streak = computeStreak(context: context, tasks: nonCumulativeTasks)
+            let recentScores = computeRecentScores(context: context, tasks: nonCumulativeTasks, days: 5)
 
             return DailyTrackEntry(
                 date: Date(),
                 score: score,
                 streak: streak,
-                tasks: widgetTasks
+                tasks: widgetTasks,
+                recentScores: recentScores
             )
         } catch {
-            return DailyTrackEntry(date: Date(), score: 0, streak: 0, tasks: [])
+            return DailyTrackEntry(date: Date(), score: 0, streak: 0, tasks: [], recentScores: [])
         }
     }
 
@@ -195,6 +214,54 @@ struct DailyTrackTimelineProvider: TimelineProvider {
             expectedDate = Calendar.current.date(byAdding: .day, value: -1, to: expectedDate)!
         }
         return streak
+    }
+
+    private func computeRecentScores(context: ModelContext, tasks: [TaskDefinition], days: Int) -> [RecentDayScore] {
+        guard !tasks.isEmpty else { return [] }
+
+        let totalWeight = tasks.reduce(0.0) { $0 + $1.weight }
+        guard totalWeight > 0 else { return [] }
+
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+
+        let dayLabelFormatter = DateFormatter()
+        dayLabelFormatter.dateFormat = "EEE" // e.g. "Mon"
+
+        let allEntries: [DailyEntry] = (try? context.fetch(FetchDescriptor<DailyEntry>())) ?? []
+        var dateEntries: [String: [DailyEntry]] = [:]
+        for entry in allEntries where !entry.deleted {
+            dateEntries[entry.date, default: []].append(entry)
+        }
+
+        var results: [RecentDayScore] = []
+        for offset in (1...days).reversed() {
+            guard let date = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
+            let dateStr = dateFormatter.string(from: date)
+            let label = dayLabelFormatter.string(from: date)
+
+            let entries = dateEntries[dateStr] ?? []
+            let entryMap = Dictionary(entries.compactMap { e in
+                e.task.map { ($0.id, e) }
+            }, uniquingKeysWith: { first, _ in first })
+
+            var weightedSum = 0.0
+            for task in tasks {
+                let value = entryMap[task.id]?.value ?? 0
+                let ratio: Double
+                if task.isCheckbox {
+                    ratio = value > 0 ? 1.0 : 0.0
+                } else {
+                    ratio = task.benchmark > 0 ? value / task.benchmark : 0
+                }
+                weightedSum += ratio * task.weight
+            }
+
+            let score = weightedSum / totalWeight
+            results.append(RecentDayScore(id: dateStr, label: label, score: score))
+        }
+
+        return results
     }
 }
 
@@ -357,37 +424,80 @@ struct MediumWidgetView: View {
     }
 }
 
+// MARK: - Day Score Bar View
+
+struct DayScoreBar: View {
+    let day: RecentDayScore
+    let maxHeight: CGFloat
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text("\(Int(day.score * 100))%")
+                .font(.system(size: 10, weight: .medium, design: .rounded))
+                .foregroundColor(.secondary)
+
+            ZStack(alignment: .bottom) {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.gray.opacity(0.15))
+                    .frame(width: 28, height: maxHeight)
+
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(barColor(for: day.score))
+                    .frame(width: 28, height: max(2, maxHeight * min(day.score, 1.0)))
+            }
+
+            Text(day.label)
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private func barColor(for score: Double) -> Color {
+        switch score {
+        case 0..<0.3: return .red
+        case 0.3..<0.7: return .orange
+        default: return .green
+        }
+    }
+}
+
 // MARK: - Large Widget View
 
 struct LargeWidgetView: View {
     let entry: DailyTrackEntry
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                ScoreRingView(score: entry.score, size: 60, lineWidth: 5)
+        VStack(spacing: 16) {
+            // Today's progress section
+            VStack(spacing: 8) {
+                Text("Today's Progress")
+                    .font(.system(.subheadline, design: .rounded))
+                    .foregroundColor(.secondary)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Today's Progress")
-                        .font(.headline)
-                    StreakView(streak: entry.streak)
-                }
+                ScoreRingView(score: entry.score, size: 100, lineWidth: 9)
 
-                Spacer()
+                StreakView(streak: entry.streak)
             }
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(entry.tasks) { task in
-                    TaskRowView(task: task, compact: false)
-                }
+            // Last 5 days section
+            VStack(spacing: 8) {
+                Text("Last 5 Days")
+                    .font(.system(.subheadline, design: .rounded))
+                    .foregroundColor(.secondary)
 
-                if entry.tasks.isEmpty {
-                    Text("No tasks configured")
-                        .font(.subheadline)
+                if entry.recentScores.isEmpty {
+                    Text("No history yet")
+                        .font(.caption)
                         .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
+                        .frame(maxHeight: .infinity)
+                } else {
+                    HStack(spacing: 12) {
+                        ForEach(entry.recentScores) { day in
+                            DayScoreBar(day: day, maxHeight: 80)
+                        }
+                    }
                 }
             }
 
