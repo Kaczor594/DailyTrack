@@ -238,6 +238,11 @@ struct TaskRowView: View {
         .onAppear {
             inputText = progress.entry.value == 0 ? "" : formatNumber(progress.entry.value)
         }
+        .onChange(of: progress.entry.value) { _, newValue in
+            if !isFocused {
+                inputText = newValue == 0 ? "" : formatNumber(newValue)
+            }
+        }
     }
 
     private func commitValue() {
