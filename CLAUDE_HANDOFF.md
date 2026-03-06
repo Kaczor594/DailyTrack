@@ -23,8 +23,11 @@ DailyTrack is a SwiftUI daily task tracker for iOS and macOS. Users define tasks
 - App Group container for widget data sharing
 - Reconcile step in sync flow cleans up stale server-side tasks (skipped on first sync)
 
-**Uncommitted changes (11 files):**
-- **Cumulative period timelines feature** — adds optional `cumulativePeriod` (`"none"`, `"week"`, `"month"`, `"year"`) to cumulative tasks. When set, the cumulative total is scoped to the current period window and the task participates in the daily score using a derived daily target (`benchmark / period_days`). Changes span: `TaskDefinition.swift`, `TaskProgress.swift`, `DailyViewModel.swift`, `HistoryViewModel.swift`, `DailyView.swift`, `SettingsView.swift`, `SettingsViewModel.swift`, `SyncManager.swift`, `DailyTrackWidget.swift`, `schema.sql`, `index.ts`
+**Uncommitted changes (12 files):**
+- **Cumulative period timelines feature** — adds optional `cumulativePeriod: String?` (nil = "none", or `"week"`, `"month"`, `"year"`) to cumulative tasks. When set, the cumulative total is scoped to the current period window and the task participates in the daily score using a derived daily target (`benchmark / period_days`). Uses `String?` (optional) instead of `String` because SwiftData lightweight migration can only add nullable columns — a non-optional field causes a runtime crash on existing databases. Changes span: `TaskDefinition.swift`, `TaskProgress.swift`, `DailyViewModel.swift`, `HistoryViewModel.swift`, `DailyView.swift`, `SettingsView.swift`, `SettingsViewModel.swift`, `SyncManager.swift`, `DailyTrackWidget.swift`, `schema.sql`, `index.ts`, `Localizable.xcstrings`
+
+**Public copy created:**
+- A sanitized copy for open-source release lives at `../DailyTrack-public/` with fresh git history, placeholder credentials, and generic seed data. Not yet pushed to GitHub.
 
 ## Environment Setup
 
@@ -108,7 +111,7 @@ DailyTrack/
 
 ## Architecture
 
-- **SwiftData** models (`TaskDefinition`, `DailyEntry`) with `@Model` macro. Stored in App Group container for widget access. `cumulativePeriod` field added with default `"none"` — SwiftData handles lightweight migration automatically.
+- **SwiftData** models (`TaskDefinition`, `DailyEntry`) with `@Model` macro. Stored in App Group container for widget access. `cumulativePeriod` field added as `String?` (optional) — SwiftData lightweight migration requires new columns to be nullable; a non-optional `String` with a Swift-level default causes a runtime crash (`"Validation error missing attribute values on mandatory destination attribute"`).
 - **MVVM pattern**: `DailyViewModel`, `HistoryViewModel`, `SettingsViewModel` drive the three tab views.
 - **Period window logic**: `periodWindow(for:on:)` helper (duplicated in DailyViewModel, HistoryViewModel, and widget provider) uses `Calendar.dateInterval(of:for:)` to get locale-aware period boundaries. Returns `(startDateStr, endDateStr, periodDays)`. Score calculation uses `entry.value / (benchmark / periodDays)` as the ratio for period-cumulative tasks.
 - **Sync flow**: `SyncManager` is injected as an `@Observable` environment object. On app launch, an initial sync runs. User edits trigger `debouncedSync` (2s delay). Sync order: push → pull → reconcile. Conflict resolution is last-write-wins based on `updatedAt` ISO8601 timestamps. Soft-delete pattern: `deleted` flag rather than actual deletion.
@@ -131,7 +134,7 @@ d692820 Initial commit: DailyTrack SwiftUI app
 ```
 
 **Uncommitted (11 files — cumulative period timelines feature):**
-- `TaskDefinition.swift` — Added `cumulativePeriod: String` property (default `"none"`), `hasPeriod` computed property; updated `CodableTaskDefinition` with `cumulative_period` coding key and `try?` fallback for backward compat
+- `TaskDefinition.swift` — Added `cumulativePeriod: String?` property (nil default, lightweight-migration safe), `hasPeriod` computed property; updated `CodableTaskDefinition` with `cumulative_period` coding key and `try?` fallback with `?? "none"` for backward compat
 - `TaskProgress.swift` — Added `periodDays: Int?`, `scoringRatio` (derived daily target ratio), `periodProgressText` (e.g. "7/10 this week")
 - `DailyViewModel.swift` — Added `periodWindow(for:on:)` helper; `cumulativeTotal` filters by period window; `calculateDailyScore()` and `computeCurrentStreak()` include `hasPeriod` tasks with period-aware ratios
 - `HistoryViewModel.swift` — Same filter/ratio pattern in `loadData`, `computeCurrentStreak`, `taskScores`; added `periodWindow` helper
@@ -151,10 +154,11 @@ d692820 Initial commit: DailyTrack SwiftUI app
 
 ## Next Steps
 
-- [ ] Commit the cumulative period timelines feature (11 modified files)
+- [ ] Commit the cumulative period timelines feature (12 modified files)
 - [ ] Deploy updated Cloudflare Worker (`cd cloudflare-worker && npx wrangler deploy`) to apply `ensureCumulativePeriodColumn` migration
 - [ ] Test: edit a task → toggle Cumulative → select "Weekly" → set benchmark to 10 → verify badge shows ~70% for 1 entry, cumulative badge shows "1/10 this week"
 - [ ] Test: navigate to a different week → verify cumulative total resets to that week's entries
+- [ ] Push public copy to GitHub (create repo, set remote URL, `git push -u origin master` from `../DailyTrack-public/`)
 - [ ] Consider extracting `periodWindow(for:on:)` into a shared utility (currently duplicated in DailyViewModel, HistoryViewModel, and widget provider)
 - [ ] Update README to reflect current SwiftData architecture and Cloudflare sync
 - [ ] Add error UI for sync failures (currently only sets `lastError` string, not surfaced to user)
