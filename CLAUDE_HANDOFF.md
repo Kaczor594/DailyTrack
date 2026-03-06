@@ -26,8 +26,11 @@ DailyTrack is a SwiftUI daily task tracker for iOS and macOS. Users define tasks
 **Uncommitted changes (12 files):**
 - **Cumulative period timelines feature** — adds optional `cumulativePeriod: String?` (nil = "none", or `"week"`, `"month"`, `"year"`) to cumulative tasks. When set, the cumulative total is scoped to the current period window and the task participates in the daily score using a derived daily target (`benchmark / period_days`). Uses `String?` (optional) instead of `String` because SwiftData lightweight migration can only add nullable columns — a non-optional field causes a runtime crash on existing databases. Changes span: `TaskDefinition.swift`, `TaskProgress.swift`, `DailyViewModel.swift`, `HistoryViewModel.swift`, `DailyView.swift`, `SettingsView.swift`, `SettingsViewModel.swift`, `SyncManager.swift`, `DailyTrackWidget.swift`, `schema.sql`, `index.ts`, `Localizable.xcstrings`
 
-**Public copy created:**
-- A sanitized copy for open-source release lives at `../DailyTrack-public/` with fresh git history, placeholder credentials, and generic seed data. Not yet pushed to GitHub.
+**Public repo created and pushed:**
+- Open-source copy lives at `../DailyTrack-public/` with fresh git history, placeholder credentials, and generic seed data.
+- Pushed to GitHub at https://github.com/Kaczor594/DailyTrackApp.git
+- README expanded with complete Cloudflare Worker deployment guide, Apple development configuration steps, sync protocol docs, troubleshooting section, and security notes.
+- No secrets or personal credentials in public repo. Personal identifiers (`com.kaczor594`) remain in bundle IDs/entitlements as users must replace them anyway (documented in README).
 
 ## Environment Setup
 
@@ -122,6 +125,8 @@ DailyTrack/
 ## Recent Changes
 
 ```
+1c55a9d Update handoff doc with String? migration fix and public copy status
+70e5fe6 Update handoff doc with cumulative period timelines feature
 2af25cc Update handoff doc with reconcile sync fix and D1 recovery notes
 3e01ec6 Redesign large widget and fix macOS widget support
 4d130ef Fix synced entry values not displaying in task row text fields and add handoff doc
@@ -133,7 +138,7 @@ fcaecca Restructure to standard Xcode project layout
 d692820 Initial commit: DailyTrack SwiftUI app
 ```
 
-**Uncommitted (11 files — cumulative period timelines feature):**
+**Uncommitted (12 files — cumulative period timelines feature):**
 - `TaskDefinition.swift` — Added `cumulativePeriod: String?` property (nil default, lightweight-migration safe), `hasPeriod` computed property; updated `CodableTaskDefinition` with `cumulative_period` coding key and `try?` fallback with `?? "none"` for backward compat
 - `TaskProgress.swift` — Added `periodDays: Int?`, `scoringRatio` (derived daily target ratio), `periodProgressText` (e.g. "7/10 this week")
 - `DailyViewModel.swift` — Added `periodWindow(for:on:)` helper; `cumulativeTotal` filters by period window; `calculateDailyScore()` and `computeCurrentStreak()` include `hasPeriod` tasks with period-aware ratios
@@ -146,20 +151,24 @@ d692820 Initial commit: DailyTrack SwiftUI app
 - `schema.sql` — Added `cumulative_period TEXT NOT NULL DEFAULT 'none'` column
 - `index.ts` — Added `ensureCumulativePeriodColumn()` auto-migration; added `cumulative_period` to INSERT/ON CONFLICT/VALUES
 
+**This session (2026-03-06):**
+- Created public repo at https://github.com/Kaczor594/DailyTrackApp.git and pushed
+- Fixed initial push issues (placeholder `YOUR_USERNAME` in remote URL, `origin already exists` error, HTTP 400 push failure)
+- Expanded public README with complete setup/deployment guide: Cloudflare Worker deployment (D1 creation, schema migration, token generation, wrangler deploy), Apple development config (bundle IDs, App Group identifiers across 4 files, code signing), sync protocol docs, troubleshooting, and security notes
+- Audited public repo for personal information: only standard identifiers (`com.kaczor594` in bundle IDs, author name in file headers) — no secrets or credentials exposed
+
 ## Known Issues
 
-- README architecture section is slightly out of date (references `DatabaseManager.swift` which was replaced by SwiftData).
 - **macOS widget debugging**: The WidgetKit Simulator (`WidgetKit_Simulator.WidgetDocument.Error error 5`) does not work for debugging widgets on Mac. Use the main app scheme instead and add the widget via Notification Center.
 - **CoreData recovery log on fresh install**: Fresh installs show `CoreData: error: During recovery, parent directory path reported as missing` followed by `Recovery attempt... was successful!` — this is harmless; CoreData auto-creates the missing App Group directory.
+- Public repo README architecture section shows `Sources/` prefix in the tree but the actual Xcode project doesn't use that intermediate directory.
 
 ## Next Steps
 
-- [ ] Commit the cumulative period timelines feature (12 modified files)
+- [ ] Commit the cumulative period timelines feature (12 modified files) in the private repo
 - [ ] Deploy updated Cloudflare Worker (`cd cloudflare-worker && npx wrangler deploy`) to apply `ensureCumulativePeriodColumn` migration
 - [ ] Test: edit a task → toggle Cumulative → select "Weekly" → set benchmark to 10 → verify badge shows ~70% for 1 entry, cumulative badge shows "1/10 this week"
 - [ ] Test: navigate to a different week → verify cumulative total resets to that week's entries
-- [ ] Push public copy to GitHub (create repo, set remote URL, `git push -u origin master` from `../DailyTrack-public/`)
 - [ ] Consider extracting `periodWindow(for:on:)` into a shared utility (currently duplicated in DailyViewModel, HistoryViewModel, and widget provider)
-- [ ] Update README to reflect current SwiftData architecture and Cloudflare sync
 - [ ] Add error UI for sync failures (currently only sets `lastError` string, not surfaced to user)
 - [ ] Consider adding pull-to-refresh gesture on DailyView to trigger manual sync
