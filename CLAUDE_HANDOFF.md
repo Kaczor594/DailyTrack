@@ -1,6 +1,6 @@
 # Claude Code Handoff — DailyTrack
 
-> Last updated: 2026-03-06
+> Last updated: 2026-03-10
 > Repo: https://github.com/Kaczor594/DailyTrack.git
 > Branch: main
 
@@ -22,9 +22,6 @@ DailyTrack is a SwiftUI daily task tracker for iOS and macOS. Users define tasks
 - Cloudflare Worker sync backend (push/pull/reconcile with last-write-wins conflict resolution)
 - App Group container for widget data sharing
 - Reconcile step in sync flow cleans up stale server-side tasks (skipped on first sync)
-
-**Uncommitted changes (12 files):**
-- **Cumulative period timelines feature** — adds optional `cumulativePeriod: String?` (nil = "none", or `"week"`, `"month"`, `"year"`) to cumulative tasks. When set, the cumulative total is scoped to the current period window and the task participates in the daily score using a derived daily target (`benchmark / period_days`). Uses `String?` (optional) instead of `String` because SwiftData lightweight migration can only add nullable columns — a non-optional field causes a runtime crash on existing databases. Changes span: `TaskDefinition.swift`, `TaskProgress.swift`, `DailyViewModel.swift`, `HistoryViewModel.swift`, `DailyView.swift`, `SettingsView.swift`, `SettingsViewModel.swift`, `SyncManager.swift`, `DailyTrackWidget.swift`, `schema.sql`, `index.ts`, `Localizable.xcstrings`
 
 **Public repo created and pushed:**
 - Open-source copy lives at `../DailyTrack-public/` with fresh git history, placeholder credentials, and generic seed data.
@@ -125,6 +122,8 @@ DailyTrack/
 ## Recent Changes
 
 ```
+f783251 Add cumulative period timelines (weekly/monthly/yearly) for cumulative tasks
+17113c1 Update handoff doc with public repo setup session notes
 1c55a9d Update handoff doc with String? migration fix and public copy status
 70e5fe6 Update handoff doc with cumulative period timelines feature
 2af25cc Update handoff doc with reconcile sync fix and D1 recovery notes
@@ -138,24 +137,14 @@ fcaecca Restructure to standard Xcode project layout
 d692820 Initial commit: DailyTrack SwiftUI app
 ```
 
-**Uncommitted (12 files — cumulative period timelines feature):**
-- `TaskDefinition.swift` — Added `cumulativePeriod: String?` property (nil default, lightweight-migration safe), `hasPeriod` computed property; updated `CodableTaskDefinition` with `cumulative_period` coding key and `try?` fallback with `?? "none"` for backward compat
-- `TaskProgress.swift` — Added `periodDays: Int?`, `scoringRatio` (derived daily target ratio), `periodProgressText` (e.g. "7/10 this week")
-- `DailyViewModel.swift` — Added `periodWindow(for:on:)` helper; `cumulativeTotal` filters by period window; `calculateDailyScore()` and `computeCurrentStreak()` include `hasPeriod` tasks with period-aware ratios
-- `HistoryViewModel.swift` — Same filter/ratio pattern in `loadData`, `computeCurrentStreak`, `taskScores`; added `periodWindow` helper
-- `DailyTrackWidget.swift` — Same pattern in `loadCurrentEntry`, `computeStreak`, `computeRecentScores`; added `periodWindow` helper
-- `DailyView.swift` — Badge/progress bar use `scoringRatio`; shows `periodProgressText` for period tasks, lifetime cumulative for non-period; input label shows daily target for period tasks
-- `SettingsView.swift` — Period picker (None/Weekly/Monthly/Yearly) in task editor; contextual benchmark label; badge shows "Weekly"/"Monthly"/"Yearly"
-- `SettingsViewModel.swift` — Passes `cumulativePeriod` in `importJSON`
-- `SyncManager.swift` — Added `cumulative_period` to push payload, pull merge, and pull insert
-- `schema.sql` — Added `cumulative_period TEXT NOT NULL DEFAULT 'none'` column
-- `index.ts` — Added `ensureCumulativePeriodColumn()` auto-migration; added `cumulative_period` to INSERT/ON CONFLICT/VALUES
+**Session 2026-03-10:**
+- Committed the cumulative period timelines feature (12 files, `f783251`) — previously sitting uncommitted since 2026-03-06
+- No code changes needed; working tree is clean
 
-**This session (2026-03-06):**
+**Session 2026-03-06:**
 - Created public repo at https://github.com/Kaczor594/DailyTrackApp.git and pushed
-- Fixed initial push issues (placeholder `YOUR_USERNAME` in remote URL, `origin already exists` error, HTTP 400 push failure)
-- Expanded public README with complete setup/deployment guide: Cloudflare Worker deployment (D1 creation, schema migration, token generation, wrangler deploy), Apple development config (bundle IDs, App Group identifiers across 4 files, code signing), sync protocol docs, troubleshooting, and security notes
-- Audited public repo for personal information: only standard identifiers (`com.kaczor594` in bundle IDs, author name in file headers) — no secrets or credentials exposed
+- Expanded public README with complete setup/deployment guide
+- Audited public repo for personal information — no secrets or credentials exposed
 
 ## Known Issues
 
@@ -165,10 +154,10 @@ d692820 Initial commit: DailyTrack SwiftUI app
 
 ## Next Steps
 
-- [ ] Commit the cumulative period timelines feature (12 modified files) in the private repo
+- [x] Commit the cumulative period timelines feature (12 modified files) in the private repo
 - [ ] Deploy updated Cloudflare Worker (`cd cloudflare-worker && npx wrangler deploy`) to apply `ensureCumulativePeriodColumn` migration
 - [ ] Test: edit a task → toggle Cumulative → select "Weekly" → set benchmark to 10 → verify badge shows ~70% for 1 entry, cumulative badge shows "1/10 this week"
 - [ ] Test: navigate to a different week → verify cumulative total resets to that week's entries
-- [ ] Consider extracting `periodWindow(for:on:)` into a shared utility (currently duplicated in DailyViewModel, HistoryViewModel, and widget provider)
+- [ ] Extract `periodWindow(for:on:)` into a shared utility (currently duplicated in DailyViewModel, HistoryViewModel, and widget provider)
 - [ ] Add error UI for sync failures (currently only sets `lastError` string, not surfaced to user)
 - [ ] Consider adding pull-to-refresh gesture on DailyView to trigger manual sync
