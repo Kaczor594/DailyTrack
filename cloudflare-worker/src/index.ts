@@ -3,6 +3,14 @@ interface Env {
   SYNC_TOKEN: string;
 }
 
+async function ensureCumulativePeriodColumn(db: D1Database) {
+  try {
+    await db.prepare("SELECT cumulative_period FROM tasks LIMIT 1").first();
+  } catch {
+    await db.prepare("ALTER TABLE tasks ADD COLUMN cumulative_period TEXT NOT NULL DEFAULT 'none'").run();
+  }
+}
+
 async function ensureSyncedAtColumn(db: D1Database) {
   // Auto-migration: add synced_at column if it doesn't exist.
   // synced_at uses server time and is used for pull queries,
@@ -38,8 +46,9 @@ export default {
       return Response.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
     }
 
-    // Run migration if needed
+    // Run migrations if needed
     await ensureSyncedAtColumn(env.DB);
+    await ensureCumulativePeriodColumn(env.DB);
 
     const url = new URL(request.url);
     const path = url.pathname;
@@ -96,14 +105,15 @@ export default {
             }
 
             await env.DB.prepare(`
-              INSERT INTO tasks (id, name, benchmark, unit, weight, is_cumulative, is_checkbox, sort_order, is_active, created_at, updated_at, deleted, synced_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              INSERT INTO tasks (id, name, benchmark, unit, weight, is_cumulative, cumulative_period, is_checkbox, sort_order, is_active, created_at, updated_at, deleted, synced_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
               ON CONFLICT(id) DO UPDATE SET
                 name = excluded.name,
                 benchmark = excluded.benchmark,
                 unit = excluded.unit,
                 weight = excluded.weight,
                 is_cumulative = excluded.is_cumulative,
+                cumulative_period = excluded.cumulative_period,
                 is_checkbox = excluded.is_checkbox,
                 sort_order = excluded.sort_order,
                 is_active = excluded.is_active,
@@ -112,7 +122,8 @@ export default {
                 synced_at = excluded.synced_at
             `).bind(
               task.id, task.name, task.benchmark, task.unit, task.weight,
-              task.is_cumulative ? 1 : 0, task.is_checkbox ? 1 : 0,
+              task.is_cumulative ? 1 : 0, task.cumulative_period || 'none',
+              task.is_checkbox ? 1 : 0,
               task.sort_order, task.is_active ? 1 : 0,
               task.created_at, task.updated_at, task.deleted ? 1 : 0,
               now

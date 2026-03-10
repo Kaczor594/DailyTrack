@@ -71,11 +71,21 @@ final class SyncManager {
         await MainActor.run { isSyncing = true; lastError = nil }
 
         do {
+            let isFirstSync = lastSyncTimestamp == "1970-01-01T00:00:00Z"
+
             // 1. Push local changes (including all deletions)
             try await pushChanges(context: context)
 
             // 2. Pull remote changes
             try await pullChanges(context: context)
+
+            // 3. Reconcile: tell server which tasks are active locally,
+            //    so it marks any stale/legacy tasks as deleted.
+            //    Skip on first sync — the device doesn't have full state yet,
+            //    so reconciling would incorrectly delete server-only tasks.
+            if !isFirstSync {
+                try await reconcile(context: context)
+            }
 
             await MainActor.run {
                 self.lastSyncDate = Date()
@@ -124,7 +134,8 @@ final class SyncManager {
                 [
                     "id": t.id, "name": t.name, "benchmark": t.benchmark,
                     "unit": t.unit, "weight": t.weight,
-                    "is_cumulative": t.isCumulative, "is_checkbox": t.isCheckbox,
+                    "is_cumulative": t.isCumulative, "cumulative_period": t.cumulativePeriod ?? "none",
+                    "is_checkbox": t.isCheckbox,
                     "sort_order": t.sortOrder, "is_active": t.isActive,
                     "created_at": t.createdAt, "updated_at": t.updatedAt,
                     "deleted": t.deleted
@@ -234,6 +245,7 @@ final class SyncManager {
                     local.unit = remoteTask.unit
                     local.weight = remoteTask.weight
                     local.isCumulative = remoteTask.isCumulative
+                    local.cumulativePeriod = remoteTask.cumulativePeriod
                     local.isCheckbox = remoteTask.isCheckbox
                     local.sortOrder = remoteTask.sortOrder
                     local.isActive = remoteTask.isActive
@@ -263,6 +275,7 @@ final class SyncManager {
                     unit: remoteTask.unit,
                     weight: remoteTask.weight,
                     isCumulative: remoteTask.isCumulative,
+                    cumulativePeriod: remoteTask.cumulativePeriod,
                     isCheckbox: remoteTask.isCheckbox,
                     sortOrder: remoteTask.sortOrder,
                     isActive: remoteTask.isActive,

@@ -126,17 +126,21 @@ struct DailyTrackTimelineProvider: TimelineProvider {
                 e.task.map { ($0.id, e) }
             }, uniquingKeysWith: { first, _ in first })
 
-            // Build task items (non-cumulative only for widget)
+            // Build task items (non-cumulative + period-cumulative for widget)
             var widgetTasks: [WidgetTaskItem] = []
             var totalWeight = 0.0
             var weightedSum = 0.0
+            let today = Date()
 
-            for task in tasks where !task.isCumulative {
+            for task in tasks where !task.isCumulative || task.hasPeriod {
                 let entry = entryMap[task.id]
                 let value = entry?.value ?? 0
                 let ratio: Double
                 if task.isCheckbox {
                     ratio = value > 0 ? 1.0 : 0.0
+                } else if task.hasPeriod, let pw = periodWindow(for: task, on: today) {
+                    let dailyTarget = task.benchmark / Double(pw.periodDays)
+                    ratio = dailyTarget > 0 ? value / dailyTarget : 0
                 } else {
                     ratio = task.benchmark > 0 ? value / task.benchmark : 0
                 }
@@ -156,9 +160,9 @@ struct DailyTrackTimelineProvider: TimelineProvider {
             }
 
             let score = totalWeight > 0 ? weightedSum / totalWeight : 0
-            let nonCumulativeTasks = tasks.filter { !$0.isCumulative }
-            let streak = computeStreak(context: context, tasks: nonCumulativeTasks)
-            let recentScores = computeRecentScores(context: context, tasks: nonCumulativeTasks, days: 5)
+            let scoringTasks = tasks.filter { !$0.isCumulative || $0.hasPeriod }
+            let streak = computeStreak(context: context, tasks: scoringTasks)
+            let recentScores = computeRecentScores(context: context, tasks: scoringTasks, days: 5)
 
             return DailyTrackEntry(
                 date: Date(),
@@ -187,6 +191,7 @@ struct DailyTrackTimelineProvider: TimelineProvider {
 
         var dateScores: [String: Double] = [:]
         for (date, entries) in dateEntries {
+            guard let entryDate = dateFormatter.date(from: date) else { continue }
             let entryMap = Dictionary(entries.compactMap { e in
                 e.task.map { ($0.id, e) }
             }, uniquingKeysWith: { first, _ in first })
@@ -197,6 +202,9 @@ struct DailyTrackTimelineProvider: TimelineProvider {
                 let ratio: Double
                 if task.isCheckbox {
                     ratio = value > 0 ? 1.0 : 0.0
+                } else if task.hasPeriod, let pw = periodWindow(for: task, on: entryDate) {
+                    let dailyTarget = task.benchmark / Double(pw.periodDays)
+                    ratio = dailyTarget > 0 ? value / dailyTarget : 0
                 } else {
                     ratio = task.benchmark > 0 ? value / task.benchmark : 0
                 }
@@ -251,6 +259,9 @@ struct DailyTrackTimelineProvider: TimelineProvider {
                 let ratio: Double
                 if task.isCheckbox {
                     ratio = value > 0 ? 1.0 : 0.0
+                } else if task.hasPeriod, let pw = periodWindow(for: task, on: date) {
+                    let dailyTarget = task.benchmark / Double(pw.periodDays)
+                    ratio = dailyTarget > 0 ? value / dailyTarget : 0
                 } else {
                     ratio = task.benchmark > 0 ? value / task.benchmark : 0
                 }
@@ -262,6 +273,24 @@ struct DailyTrackTimelineProvider: TimelineProvider {
         }
 
         return results
+    }
+
+    private func periodWindow(for task: TaskDefinition, on date: Date) -> (startDateStr: String, endDateStr: String, periodDays: Int)? {
+        let calendar = Calendar.current
+        let component: Calendar.Component
+        guard let period = task.cumulativePeriod else { return nil }
+        switch period {
+        case "week": component = .weekOfYear
+        case "month": component = .month
+        case "year": component = .year
+        default: return nil
+        }
+        guard let interval = calendar.dateInterval(of: component, for: date) else { return nil }
+        let startStr = dateFormatter.string(from: interval.start)
+        let endDate = calendar.date(byAdding: .day, value: -1, to: interval.end)!
+        let endStr = dateFormatter.string(from: endDate)
+        let days = calendar.dateComponents([.day], from: interval.start, to: interval.end).day ?? 1
+        return (startStr, endStr, days)
     }
 }
 

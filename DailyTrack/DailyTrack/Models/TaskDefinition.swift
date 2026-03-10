@@ -10,12 +10,19 @@ final class TaskDefinition {
     var unit: String
     var weight: Double
     var isCumulative: Bool
+    var cumulativePeriod: String?
     var isCheckbox: Bool
     var sortOrder: Int
     var isActive: Bool
     var createdAt: String
     var updatedAt: String
     var deleted: Bool
+
+    /// Whether this cumulative task has a period (week/month/year) set
+    var hasPeriod: Bool {
+        guard isCumulative, let period = cumulativePeriod else { return false }
+        return period != "none"
+    }
 
     @Relationship(deleteRule: .cascade, inverse: \DailyEntry.task)
     var entries: [DailyEntry]?
@@ -27,6 +34,7 @@ final class TaskDefinition {
         unit: String = "",
         weight: Double = 1.0,
         isCumulative: Bool = false,
+        cumulativePeriod: String? = nil,
         isCheckbox: Bool = false,
         sortOrder: Int = 0,
         isActive: Bool = true,
@@ -40,6 +48,7 @@ final class TaskDefinition {
         self.unit = unit
         self.weight = weight
         self.isCumulative = isCumulative
+        self.cumulativePeriod = cumulativePeriod
         self.isCheckbox = isCheckbox
         self.sortOrder = sortOrder
         self.isActive = isActive
@@ -61,6 +70,7 @@ struct CodableTaskDefinition: Codable {
     var unit: String
     var weight: Double
     var isCumulative: Bool
+    var cumulativePeriod: String
     var isCheckbox: Bool
     var sortOrder: Int
     var isActive: Bool
@@ -72,6 +82,7 @@ struct CodableTaskDefinition: Codable {
     enum CodingKeys: String, CodingKey {
         case id, name, benchmark, unit, weight
         case isCumulative = "is_cumulative"
+        case cumulativePeriod = "cumulative_period"
         case isCheckbox = "is_checkbox"
         case sortOrder = "sort_order"
         case isActive = "is_active"
@@ -88,6 +99,7 @@ struct CodableTaskDefinition: Codable {
         unit = try c.decode(String.self, forKey: .unit)
         weight = try c.decode(Double.self, forKey: .weight)
         isCumulative = (try c.decode(Int.self, forKey: .isCumulative)) != 0
+        cumulativePeriod = (try? c.decode(String.self, forKey: .cumulativePeriod)) ?? "none"
         isCheckbox = (try c.decode(Int.self, forKey: .isCheckbox)) != 0
         sortOrder = try c.decode(Int.self, forKey: .sortOrder)
         isActive = (try c.decode(Int.self, forKey: .isActive)) != 0
@@ -103,6 +115,7 @@ struct CodableTaskDefinition: Codable {
         self.unit = task.unit
         self.weight = task.weight
         self.isCumulative = task.isCumulative
+        self.cumulativePeriod = task.cumulativePeriod ?? "none"
         self.isCheckbox = task.isCheckbox
         self.sortOrder = task.sortOrder
         self.isActive = task.isActive

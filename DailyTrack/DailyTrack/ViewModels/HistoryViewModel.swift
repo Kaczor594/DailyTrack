@@ -46,8 +46,8 @@ final class HistoryViewModel {
         self.modelContext = context
 
         tasks = fetchActiveTasks(context: context)
-        let nonCumulativeTasks = tasks.filter { !$0.isCumulative }
-        let totalWeight = nonCumulativeTasks.reduce(0.0) { $0 + $1.weight }
+        let scoringTasks = tasks.filter { !$0.isCumulative || $0.hasPeriod }
+        let totalWeight = scoringTasks.reduce(0.0) { $0 + $1.weight }
 
         let endDate = dateFormatter.string(from: Date())
         let startDateValue = Calendar.current.date(byAdding: .day, value: -selectedPeriod.days, to: Date())!
@@ -66,15 +66,19 @@ final class HistoryViewModel {
 
         dailyScores = dateEntries.map { (date, entries) in
             guard totalWeight > 0 else { return (date, 0.0) }
+            let entryDate = dateFormatter.date(from: date) ?? Date()
             let entryMap = Dictionary(entries.compactMap { e in
                 e.task.map { ($0.id, e) }
             }, uniquingKeysWith: { first, _ in first })
             var weightedSum = 0.0
-            for task in nonCumulativeTasks {
+            for task in scoringTasks {
                 let value = entryMap[task.id]?.value ?? 0
                 let ratio: Double
                 if task.isCheckbox {
                     ratio = value > 0 ? 1.0 : 0.0
+                } else if task.hasPeriod, let pw = periodWindow(for: task, on: entryDate) {
+                    let dailyTarget = task.benchmark / Double(pw.periodDays)
+                    ratio = dailyTarget > 0 ? value / dailyTarget : 0
                 } else {
                     ratio = task.benchmark > 0 ? value / task.benchmark : 0
                 }
@@ -135,9 +139,9 @@ final class HistoryViewModel {
     }
 
     private func computeCurrentStreak(context: ModelContext, threshold: Double = 0.7) -> Int {
-        let nonCumulativeTasks = tasks.filter { !$0.isCumulative }
-        guard !nonCumulativeTasks.isEmpty else { return 0 }
-        let totalWeight = nonCumulativeTasks.reduce(0.0) { $0 + $1.weight }
+        let scoringTasks = tasks.filter { !$0.isCumulative || $0.hasPeriod }
+        guard !scoringTasks.isEmpty else { return 0 }
+        let totalWeight = scoringTasks.reduce(0.0) { $0 + $1.weight }
         guard totalWeight > 0 else { return 0 }
 
         let allEntries: [DailyEntry] = (try? context.fetch(FetchDescriptor<DailyEntry>())) ?? []
@@ -148,15 +152,19 @@ final class HistoryViewModel {
 
         var dateScores: [String: Double] = [:]
         for (date, entries) in dateEntries {
+            guard let entryDate = dateFormatter.date(from: date) else { continue }
             let entryMap = Dictionary(entries.compactMap { e in
                 e.task.map { ($0.id, e) }
             }, uniquingKeysWith: { first, _ in first })
             var weightedSum = 0.0
-            for task in nonCumulativeTasks {
+            for task in scoringTasks {
                 let value = entryMap[task.id]?.value ?? 0
                 let ratio: Double
                 if task.isCheckbox {
                     ratio = value > 0 ? 1.0 : 0.0
+                } else if task.hasPeriod, let pw = periodWindow(for: task, on: entryDate) {
+                    let dailyTarget = task.benchmark / Double(pw.periodDays)
+                    ratio = dailyTarget > 0 ? value / dailyTarget : 0
                 } else {
                     ratio = task.benchmark > 0 ? value / task.benchmark : 0
                 }
@@ -192,10 +200,37 @@ final class HistoryViewModel {
             e.task.map { ($0.id, e) }
         }, uniquingKeysWith: { first, _ in first })
 
+        let entryDate = dateFormatter.date(from: date) ?? Date()
         return tasks.map { task in
             let value = entryMap[task.id]?.value ?? 0
-            let ratio = task.benchmark > 0 ? value / task.benchmark : 0
+            let ratio: Double
+            if task.hasPeriod, let pw = periodWindow(for: task, on: entryDate) {
+                let dailyTarget = task.benchmark / Double(pw.periodDays)
+                ratio = dailyTarget > 0 ? value / dailyTarget : 0
+            } else {
+                ratio = task.benchmark > 0 ? value / task.benchmark : 0
+            }
             return (task, value, ratio)
         }
+    }
+
+    // MARK: - Period Window
+
+    private func periodWindow(for task: TaskDefinition, on date: Date) -> (startDateStr: String, endDateStr: String, periodDays: Int)? {
+        let calendar = Calendar.current
+        let component: Calendar.Component
+        guard let period = task.cumulativePeriod else { return nil }
+        switch period {
+        case "week": component = .weekOfYear
+        case "month": component = .month
+        case "year": component = .year
+        default: return nil
+        }
+        guard let interval = calendar.dateInterval(of: component, for: date) else { return nil }
+        let startStr = dateFormatter.string(from: interval.start)
+        let endDate = calendar.date(byAdding: .day, value: -1, to: interval.end)!
+        let endStr = dateFormatter.string(from: endDate)
+        let days = calendar.dateComponents([.day], from: interval.start, to: interval.end).day ?? 1
+        return (startStr, endStr, days)
     }
 }

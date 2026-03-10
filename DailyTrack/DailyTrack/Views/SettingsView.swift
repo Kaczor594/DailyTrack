@@ -165,7 +165,14 @@ struct TaskDefinitionRow: View {
                         .foregroundStyle(task.isActive ? .primary : .secondary)
 
                     if task.isCumulative {
-                        Text(String(localized: "Cumulative"))
+                        Text(task.hasPeriod ? {
+                            switch task.cumulativePeriod ?? "none" {
+                            case "week": return String(localized: "Weekly")
+                            case "month": return String(localized: "Monthly")
+                            case "year": return String(localized: "Yearly")
+                            default: return String(localized: "Cumulative")
+                            }
+                        }() : String(localized: "Cumulative"))
                             .font(.caption2)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
@@ -225,6 +232,7 @@ struct TaskEditorSheet: View {
     @State private var unit: String = ""
     @State private var weight: String = "1"
     @State private var isCumulative: Bool = false
+    @State private var cumulativePeriod: String = "none"
     @State private var isCheckbox: Bool = false
 
     var isEditing: Bool { task != nil }
@@ -245,7 +253,7 @@ struct TaskEditorSheet: View {
 
                     if !isCheckbox {
                         HStack {
-                            Text(String(localized: "Daily Benchmark"))
+                            Text(benchmarkLabel)
                             Spacer()
                             TextField("1", text: $benchmark)
                                 #if os(iOS)
@@ -257,6 +265,20 @@ struct TaskEditorSheet: View {
                     }
 
                     Toggle(String(localized: "Cumulative (track total over time)"), isOn: $isCumulative)
+                        .onChange(of: isCumulative) { _, newValue in
+                            if !newValue {
+                                cumulativePeriod = "none"
+                            }
+                        }
+
+                    if isCumulative {
+                        Picker(String(localized: "Period"), selection: $cumulativePeriod) {
+                            Text(String(localized: "None (lifetime)")).tag("none")
+                            Text(String(localized: "Weekly")).tag("week")
+                            Text(String(localized: "Monthly")).tag("month")
+                            Text(String(localized: "Yearly")).tag("year")
+                        }
+                    }
                 } header: {
                     Text(String(localized: "Tracking"))
                 }
@@ -302,9 +324,19 @@ struct TaskEditorSheet: View {
                     unit = t.unit
                     weight = String(t.weight)
                     isCumulative = t.isCumulative
+                    cumulativePeriod = t.cumulativePeriod ?? "none"
                     isCheckbox = t.isCheckbox
                 }
             }
+        }
+    }
+
+    private var benchmarkLabel: String {
+        switch cumulativePeriod {
+        case "week": return String(localized: "Weekly Target")
+        case "month": return String(localized: "Monthly Target")
+        case "year": return String(localized: "Yearly Target")
+        default: return String(localized: "Daily Benchmark")
         }
     }
 
@@ -319,6 +351,7 @@ struct TaskEditorSheet: View {
             existing.unit = unit.trimmingCharacters(in: .whitespaces)
             existing.weight = weightVal
             existing.isCumulative = isCumulative
+            existing.cumulativePeriod = cumulativePeriod
             existing.isCheckbox = isCheckbox
             onSave(existing)
         } else {
@@ -328,6 +361,7 @@ struct TaskEditorSheet: View {
                 unit: unit.trimmingCharacters(in: .whitespaces),
                 weight: weightVal,
                 isCumulative: isCumulative,
+                cumulativePeriod: cumulativePeriod,
                 isCheckbox: isCheckbox
             )
             onSave(result)

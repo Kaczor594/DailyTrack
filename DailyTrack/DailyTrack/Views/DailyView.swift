@@ -162,7 +162,7 @@ struct TaskRowView: View {
                 Spacer()
 
                 // Completion percentage badge
-                Text("\(Int(progress.dailyRatio * 100))%")
+                Text("\(Int(progress.scoringRatio * 100))%")
                     .font(.caption)
                     .fontWeight(.semibold)
                     .padding(.horizontal, 8)
@@ -181,8 +181,8 @@ struct TaskRowView: View {
 
                     RoundedRectangle(cornerRadius: 4)
                         .fill(badgeColor)
-                        .frame(width: geo.size.width * min(progress.dailyRatio, 1.0), height: 6)
-                        .animation(.easeInOut(duration: 0.3), value: progress.dailyRatio)
+                        .frame(width: geo.size.width * min(progress.scoringRatio, 1.0), height: 6)
+                        .animation(.easeInOut(duration: 0.3), value: progress.scoringRatio)
                 }
             }
             .frame(height: 6)
@@ -211,15 +211,31 @@ struct TaskRowView: View {
                             if !focused { commitValue() }
                         }
 
-                    Text("/ \(formatNumber(progress.task.benchmark)) \(progress.task.unit)")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    if progress.task.hasPeriod, let pd = progress.periodDays, pd > 0 {
+                        let dailyTarget = progress.task.benchmark / Double(pd)
+                        Text("/ \(formatNumber(dailyTarget)) \(progress.task.unit)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("/ \(formatNumber(progress.task.benchmark)) \(progress.task.unit)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Spacer()
 
-                // Cumulative badge for cumulative tasks
-                if let cumRatio = progress.cumulativeRatio {
+                // Period progress badge for period-cumulative tasks
+                if let periodText = progress.periodProgressText {
+                    VStack(alignment: .trailing) {
+                        Text(periodText)
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.blue)
+                    }
+                }
+                // Lifetime cumulative badge for non-period cumulative tasks
+                else if let cumRatio = progress.cumulativeRatio, !progress.task.hasPeriod {
                     VStack(alignment: .trailing) {
                         Text(String(localized: "Cumulative"))
                             .font(.caption2)
@@ -251,7 +267,7 @@ struct TaskRowView: View {
     }
 
     private var badgeColor: Color {
-        switch progress.dailyRatio {
+        switch progress.scoringRatio {
         case 0: return .gray
         case 0..<0.5: return .red
         case 0.5..<1.0: return .orange

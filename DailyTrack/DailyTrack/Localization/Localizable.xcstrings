@@ -324,6 +324,12 @@
         }
       }
     },
+    "Monthly" : {
+
+    },
+    "Monthly Target" : {
+
+    },
     "New Task" : {
       "localizations" : {
         "de" : {
@@ -343,6 +349,9 @@
           }
         }
       }
+    },
+    "None (lifetime)" : {
+
     },
     "Not done" : {
       "localizations" : {
@@ -455,6 +464,15 @@
     "Tasks are saved at: %@" : {
 
     },
+    "this month" : {
+
+    },
+    "this week" : {
+
+    },
+    "this year" : {
+
+    },
     "Today" : {
       "localizations" : {
         "de" : {
@@ -495,6 +513,12 @@
         }
       }
     },
+    "Weekly" : {
+
+    },
+    "Weekly Target" : {
+
+    },
     "Weight" : {
       "localizations" : {
         "de" : {
@@ -527,6 +551,12 @@
           }
         }
       }
+    },
+    "Yearly" : {
+
+    },
+    "Yearly Target" : {
+
     }
   },
   "version" : "1.0"

@@ -92,6 +92,7 @@ final class SettingsViewModel {
                 unit: ct.unit,
                 weight: ct.weight,
                 isCumulative: ct.isCumulative,
+                cumulativePeriod: ct.cumulativePeriod,
                 isCheckbox: ct.isCheckbox,
                 sortOrder: ct.sortOrder,
                 isActive: ct.isActive,
