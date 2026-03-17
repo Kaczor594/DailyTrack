@@ -81,7 +81,12 @@ struct DailyView: View {
             }
             #endif
             .onAppear {
-                viewModel.loadData(context: modelContext)
+                viewModel.loadData(context: modelContext, canCreateEntries: syncManager.hasCompletedInitialSync)
+            }
+            .onChange(of: syncManager.hasCompletedInitialSync) { _, completed in
+                if completed {
+                    viewModel.loadData(context: modelContext)
+                }
             }
             .onChange(of: syncManager.syncVersion) { _, _ in
                 viewModel.loadData(context: modelContext)

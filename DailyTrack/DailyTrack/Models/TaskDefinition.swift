@@ -70,7 +70,10 @@ struct CodableTaskDefinition: Codable {
     var unit: String
     var weight: Double
     var isCumulative: Bool
-    var cumulativePeriod: String
+    /// nil when the server response doesn't include this field (e.g. old Worker
+    /// that predates the cumulative-period feature). The pull merge should
+    /// preserve the local value in that case rather than overwriting with "none".
+    var cumulativePeriod: String?
     var isCheckbox: Bool
     var sortOrder: Int
     var isActive: Bool
@@ -99,7 +102,7 @@ struct CodableTaskDefinition: Codable {
         unit = try c.decode(String.self, forKey: .unit)
         weight = try c.decode(Double.self, forKey: .weight)
         isCumulative = (try c.decode(Int.self, forKey: .isCumulative)) != 0
-        cumulativePeriod = (try? c.decode(String.self, forKey: .cumulativePeriod)) ?? "none"
+        cumulativePeriod = try? c.decode(String.self, forKey: .cumulativePeriod)
         isCheckbox = (try c.decode(Int.self, forKey: .isCheckbox)) != 0
         sortOrder = try c.decode(Int.self, forKey: .sortOrder)
         isActive = (try c.decode(Int.self, forKey: .isActive)) != 0

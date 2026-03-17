@@ -1,6 +1,6 @@
 # Claude Code Handoff — DailyTrack
 
-> Last updated: 2026-03-10
+> Last updated: 2026-03-17
 > Repo: https://github.com/Kaczor594/DailyTrack.git
 > Branch: main
 
@@ -22,6 +22,8 @@ DailyTrack is a SwiftUI daily task tracker for iOS and macOS. Users define tasks
 - Cloudflare Worker sync backend (push/pull/reconcile with last-write-wins conflict resolution)
 - App Group container for widget data sharing
 - Reconcile step in sync flow cleans up stale server-side tasks (skipped on first sync)
+- **Reinstall-safe sync**: three-branch sync logic prevents zero-value entries from overwriting server data after a fresh install or provisioning expiry
+- **Defensive `cumulativePeriod` handling**: field is `String?` — pull merge only overwrites when the server sends a value, preventing older Workers from resetting the local period to "none"
 
 **Public repo created and pushed:**
 - Open-source copy lives at `../DailyTrack-public/` with fresh git history, placeholder credentials, and generic seed data.
@@ -114,7 +116,8 @@ DailyTrack/
 - **SwiftData** models (`TaskDefinition`, `DailyEntry`) with `@Model` macro. Stored in App Group container for widget access. `cumulativePeriod` field added as `String?` (optional) — SwiftData lightweight migration requires new columns to be nullable; a non-optional `String` with a Swift-level default causes a runtime crash (`"Validation error missing attribute values on mandatory destination attribute"`).
 - **MVVM pattern**: `DailyViewModel`, `HistoryViewModel`, `SettingsViewModel` drive the three tab views.
 - **Period window logic**: `periodWindow(for:on:)` helper (duplicated in DailyViewModel, HistoryViewModel, and widget provider) uses `Calendar.dateInterval(of:for:)` to get locale-aware period boundaries. Returns `(startDateStr, endDateStr, periodDays)`. Score calculation uses `entry.value / (benchmark / periodDays)` as the ratio for period-cumulative tasks.
-- **Sync flow**: `SyncManager` is injected as an `@Observable` environment object. On app launch, an initial sync runs. User edits trigger `debouncedSync` (2s delay). Sync order: push → pull → reconcile. Conflict resolution is last-write-wins based on `updatedAt` ISO8601 timestamps. Soft-delete pattern: `deleted` flag rather than actual deletion.
+- **Sync flow**: `SyncManager` is injected as an `@Observable` environment object. On app launch, an initial sync runs. User edits trigger `debouncedSync` (2s delay). Sync order depends on context: **first-ever sync** (epoch timestamp) is pull-only; **first sync of session** (`!hasCompletedInitialSync`) does pull → push → reconcile; **subsequent syncs** do push → pull → reconcile. Conflict resolution is last-write-wins based on `updatedAt` ISO8601 timestamps. Soft-delete pattern: `deleted` flag rather than actual deletion. `hasCompletedInitialSync` (session-scoped) flag gates UI entry creation to prevent zero-value entries from overwriting server data before the first pull completes.
+- **Defensive decoding**: `CodableTaskDefinition.cumulativePeriod` is `String?`. The decoder uses `try?` without a default, so missing/null server fields decode to `nil`. The pull merge only overwrites the local `cumulativePeriod` when the server sent a non-nil value. The push path sends `?? "none"` so the server always gets a concrete value.
 - **Reconcile**: After push and pull, the app sends its list of active task IDs to `POST /reconcile`. The server marks any task not in that list as deleted. **Skipped on first sync** (when `lastSyncTimestamp` is the epoch default) because a fresh device doesn't have the full task set yet — reconciling would incorrectly delete server-only tasks.
 - **Cloudflare Worker** exposes `POST /sync` (upsert), `GET /sync?since=` (pull changes), and `POST /reconcile` (mark stale tasks as deleted). Auth via Bearer token.
 - **Widget** uses App Group shared container to read task data via SwiftData (read-only ModelConfiguration). Timeline refreshes at midnight or every 30 minutes. Three sizes supported: small (score ring only), medium (score ring + 4 task rows), large (today's score ring + 5-day history bar chart). App Intents allow toggling checkbox tasks directly from the widget.
@@ -137,6 +140,20 @@ fcaecca Restructure to standard Xcode project layout
 d692820 Initial commit: DailyTrack SwiftUI app
 ```
 
+**Session 2026-03-17 (continued):**
+- Fixed `cumulativePeriod` being reset to "none" on every pull cycle
+  - Root cause: `CodableTaskDefinition` decoded `cumulativePeriod` with `?? "none"` default, so servers that don't return the field would produce "none" and overwrite the local "week"/"month"/"year" value during pull merge.
+  - Fix: Made `cumulativePeriod` a `String?` in both `TaskDefinition` and `CodableTaskDefinition`. Decoder uses `try?` without a default. Pull merge only overwrites when the server sends a non-nil value. Push path uses `?? "none"` to always send a concrete value to the server.
+  - Files changed: `TaskDefinition.swift`, `SyncManager.swift`
+
+**Session 2026-03-17:**
+- Fixed sync bug where reinstalling the app (e.g. after 7-day free provisioning expiry) would overwrite server data with zero-value entries
+- Root cause: `DailyViewModel.loadData()` eagerly creates `DailyEntry(value: 0)` for every task on `onAppear` — these get fresh `updatedAt` timestamps. The sync then pushes them before pulling, and they win last-write-wins against the real data on the server.
+- Fix has two parts:
+  1. **Entry creation gating**: `SyncManager.hasCompletedInitialSync` (session-scoped, starts `false` when sync is enabled) prevents `DailyViewModel.loadData()` from creating new entries until the first sync of the session completes. `DailyView` observes this flag and reloads with entry creation enabled after sync.
+  2. **Sync order**: Three-branch sync logic — true first sync (epoch timestamp) is pull-only; first sync of session (`!hasCompletedInitialSync`) does pull → push → reconcile; subsequent syncs do push → pull → reconcile.
+- Files changed: `SyncManager.swift`, `DailyViewModel.swift`, `DailyView.swift`
+
 **Session 2026-03-10:**
 - Committed the cumulative period timelines feature (12 files, `f783251`) — previously sitting uncommitted since 2026-03-06
 - No code changes needed; working tree is clean
@@ -155,6 +172,9 @@ d692820 Initial commit: DailyTrack SwiftUI app
 ## Next Steps
 
 - [x] Commit the cumulative period timelines feature (12 modified files) in the private repo
+- [x] Fix reinstall sync bug (push-before-pull + eager entry creation)
+- [x] Fix `cumulativePeriod` reset bug (defensive optional decoding + conditional pull merge)
+- [ ] Test reinstall sync fix: let app expire on phone → rebuild from Xcode → verify it pulls server data without overwriting today's entries
 - [ ] Deploy updated Cloudflare Worker (`cd cloudflare-worker && npx wrangler deploy`) to apply `ensureCumulativePeriodColumn` migration
 - [ ] Test: edit a task → toggle Cumulative → select "Weekly" → set benchmark to 10 → verify badge shows ~70% for 1 entry, cumulative badge shows "1/10 this week"
 - [ ] Test: navigate to a different week → verify cumulative total resets to that week's entries

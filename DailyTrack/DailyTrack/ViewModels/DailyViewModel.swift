@@ -37,7 +37,11 @@ final class DailyViewModel {
 
     // MARK: - Data Loading
 
-    func loadData(context: ModelContext) {
+    /// Load tasks and entries for the selected date.
+    /// - Parameter canCreateEntries: When false, missing entries are not created.
+    ///   Pass false while waiting for the initial sync to complete so that
+    ///   zero-value entries with fresh timestamps don't overwrite server data.
+    func loadData(context: ModelContext, canCreateEntries: Bool = true) {
         self.modelContext = context
 
         let tasks = fetchActiveTasks(context: context)
@@ -47,13 +51,20 @@ final class DailyViewModel {
             e.task.map { ($0.id, e) }
         }, uniquingKeysWith: { first, _ in first })
 
-        taskProgressList = tasks.map { task in
-            let entry = entryMap[task.id] ?? {
+        taskProgressList = tasks.compactMap { task in
+            let entry: DailyEntry
+            if let existing = entryMap[task.id] {
+                entry = existing
+            } else if canCreateEntries {
                 let entryId = "\(task.id)-\(dateStr)"
                 let newEntry = DailyEntry(id: entryId, task: task, date: dateStr)
                 context.insert(newEntry)
-                return newEntry
-            }()
+                entry = newEntry
+            } else {
+                // No entry exists and we can't create one yet (initial sync pending).
+                // Skip this task from the UI for now — it will appear after sync.
+                return nil
+            }
             let cumTotal = task.isCumulative ? cumulativeTotal(for: task, context: context) : nil
             var periodDays: Int? = nil
             if task.hasPeriod {

@@ -9,6 +9,12 @@ final class SyncManager {
     var syncVersion: Int = 0
     var lastError: String?
 
+    /// True once the first sync of this app session has completed (or if sync
+    /// is disabled). The UI should avoid creating new DailyEntry objects until
+    /// this is true, to prevent zero-value entries with fresh timestamps from
+    /// overwriting real data on the server via last-write-wins.
+    var hasCompletedInitialSync = false
+
     var apiURL: String {
         didSet { UserDefaults.standard.set(apiURL, forKey: "syncAPIURL") }
     }
@@ -32,6 +38,12 @@ final class SyncManager {
     init() {
         self.apiURL = UserDefaults.standard.string(forKey: "syncAPIURL") ?? ""
         self.syncToken = UserDefaults.standard.string(forKey: "syncToken") ?? ""
+
+        // If sync is disabled, the UI can create entries immediately —
+        // there's no server data to conflict with.
+        if !syncEnabled {
+            hasCompletedInitialSync = true
+        }
     }
 
     // MARK: - Auto Sync
@@ -73,27 +85,40 @@ final class SyncManager {
         do {
             let isFirstSync = lastSyncTimestamp == "1970-01-01T00:00:00Z"
 
-            // 1. Push local changes (including all deletions)
-            try await pushChanges(context: context)
-
-            // 2. Pull remote changes
-            try await pullChanges(context: context)
-
-            // 3. Reconcile: tell server which tasks are active locally,
-            //    so it marks any stale/legacy tasks as deleted.
-            //    Skip on first sync — the device doesn't have full state yet,
-            //    so reconciling would incorrectly delete server-only tasks.
-            if !isFirstSync {
+            if isFirstSync {
+                // On first sync (fresh install / reinstall), ONLY pull.
+                // The device has no meaningful local state — only seed data.
+                // Pushing would send seed tasks/zero-value entries with fresh
+                // timestamps that overwrite real data on the server.
+                // Any seed tasks that duplicate server data will be reconciled
+                // on the next normal sync cycle.
+                try await pullChanges(context: context)
+            } else if !hasCompletedInitialSync {
+                // First sync of this app session (e.g. after Xcode reinstall
+                // when the provisioning profile expired). Local DB has historical
+                // data but the UI may have just created zero-value entries for
+                // today with fresh timestamps. Pull first so server data wins,
+                // then push any genuinely local changes, then reconcile.
+                try await pullChanges(context: context)
+                try await pushChanges(context: context)
+                try await reconcile(context: context)
+            } else {
+                // Subsequent syncs within the same session: local data is
+                // authoritative, so push first for efficiency.
+                try await pushChanges(context: context)
+                try await pullChanges(context: context)
                 try await reconcile(context: context)
             }
 
             await MainActor.run {
+                self.hasCompletedInitialSync = true
                 self.lastSyncDate = Date()
                 self.syncVersion += 1
                 self.isSyncing = false
             }
         } catch {
             await MainActor.run {
+                self.hasCompletedInitialSync = true
                 self.lastError = error.localizedDescription
                 self.isSyncing = false
             }
@@ -245,7 +270,13 @@ final class SyncManager {
                     local.unit = remoteTask.unit
                     local.weight = remoteTask.weight
                     local.isCumulative = remoteTask.isCumulative
-                    local.cumulativePeriod = remoteTask.cumulativePeriod
+                    // Only overwrite cumulativePeriod if the server actually
+                    // returned a value. A nil here means the server predates
+                    // the cumulative-period feature and we should preserve
+                    // whatever the local device has.
+                    if let remotePeriod = remoteTask.cumulativePeriod {
+                        local.cumulativePeriod = remotePeriod
+                    }
                     local.isCheckbox = remoteTask.isCheckbox
                     local.sortOrder = remoteTask.sortOrder
                     local.isActive = remoteTask.isActive
