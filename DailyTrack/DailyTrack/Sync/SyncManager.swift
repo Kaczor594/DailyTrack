@@ -224,6 +224,7 @@ final class SyncManager {
 
     private func pullChanges(context: ModelContext) async throws {
         let since = lastSyncTimestamp
+        let isFirstSync = since == "1970-01-01T00:00:00Z"
 
         var request = URLRequest(url: URL(string: "\(apiURL)/sync?since=\(since)")!)
         request.httpMethod = "GET"
@@ -263,8 +264,12 @@ final class SyncManager {
                     continue
                 }
 
-                // Last-write-wins for non-deletion updates
-                if remoteTask.updatedAt > local.updatedAt {
+                // On first sync, server data always wins over local data.
+                // Local data is just seed data with artificially fresh timestamps —
+                // the server has the real, user-edited state.
+                let serverWins = isFirstSync || remoteTask.updatedAt > local.updatedAt
+
+                if serverWins {
                     local.name = remoteTask.name
                     local.benchmark = remoteTask.benchmark
                     local.unit = remoteTask.unit
@@ -338,7 +343,10 @@ final class SyncManager {
                     continue
                 }
 
-                if remoteEntry.updatedAt > local.updatedAt {
+                // On first sync, server always wins (local entries are just seed data)
+                let serverWins = isFirstSync || remoteEntry.updatedAt > local.updatedAt
+
+                if serverWins {
                     local.value = remoteEntry.value
                     local.notes = remoteEntry.notes
                     local.updatedAt = remoteEntry.updatedAt

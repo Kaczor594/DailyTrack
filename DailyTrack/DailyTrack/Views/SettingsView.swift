@@ -6,6 +6,7 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(SyncManager.self) private var syncManager
     @State private var viewModel = SettingsViewModel()
+    @FocusState private var isTextFieldFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -44,8 +45,12 @@ struct SettingsView: View {
                         .textInputAutocapitalization(.never)
                         #endif
                         .autocorrectionDisabled()
+                        .submitLabel(.done)
+                        .focused($isTextFieldFocused)
 
                     SecureField(String(localized: "Sync Token"), text: $sync.syncToken)
+                        .submitLabel(.done)
+                        .focused($isTextFieldFocused)
 
                     HStack {
                         Button {
@@ -120,6 +125,14 @@ struct SettingsView: View {
                 #if os(iOS)
                 ToolbarItem(placement: .topBarLeading) {
                     EditButton()
+                }
+                ToolbarItem(placement: .keyboard) {
+                    HStack {
+                        Spacer()
+                        Button(String(localized: "Done")) {
+                            isTextFieldFocused = false
+                        }
+                    }
                 }
                 #endif
             }

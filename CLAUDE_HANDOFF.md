@@ -1,6 +1,6 @@
 # Claude Code Handoff — DailyTrack
 
-> Last updated: 2026-03-17
+> Last updated: 2026-03-24
 > Repo: https://github.com/Kaczor594/DailyTrack.git
 > Branch: main
 
@@ -12,7 +12,7 @@ DailyTrack is a SwiftUI daily task tracker for iOS and macOS. Users define tasks
 
 **Working:**
 - Core daily tracking (numeric input, checkboxes, cumulative tasks)
-- **Cumulative period timelines** (weekly/monthly/yearly) — cumulative tasks can now be scoped to a period window with derived daily targets contributing to the daily score
+- **Cumulative period timelines** (weekly/monthly/yearly) — cumulative tasks can be scoped to a period window with derived daily targets contributing to the daily score
 - Weighted daily score calculation with progress ring
 - History view with calendar heatmap, streak tracking, and trend charts
 - Task configuration via in-app settings and JSON import/export
@@ -23,13 +23,13 @@ DailyTrack is a SwiftUI daily task tracker for iOS and macOS. Users define tasks
 - App Group container for widget data sharing
 - Reconcile step in sync flow cleans up stale server-side tasks (skipped on first sync)
 - **Reinstall-safe sync**: three-branch sync logic prevents zero-value entries from overwriting server data after a fresh install or provisioning expiry
+- **First-sync server-wins**: on first sync (epoch timestamp), server data unconditionally overwrites local seed data regardless of timestamps, preventing stale seed definitions from winning due to fresh `createdAt`/`updatedAt` values
 - **Defensive `cumulativePeriod` handling**: field is `String?` — pull merge only overwrites when the server sends a value, preventing older Workers from resetting the local period to "none"
+- **Keyboard dismiss button** on sync settings fields (iOS) — "Done" toolbar button above keyboard for API URL and Sync Token text fields
 
-**Public repo created and pushed:**
-- Open-source copy lives at `../DailyTrack-public/` with fresh git history, placeholder credentials, and generic seed data.
-- Pushed to GitHub at https://github.com/Kaczor594/DailyTrackApp.git
-- README expanded with complete Cloudflare Worker deployment guide, Apple development configuration steps, sync protocol docs, troubleshooting section, and security notes.
-- No secrets or personal credentials in public repo. Personal identifiers (`com.kaczor594`) remain in bundle IDs/entitlements as users must replace them anyway (documented in README).
+**Public repo:**
+- Open-source copy at `../DailyTrack-public/`, pushed to https://github.com/Kaczor594/DailyTrackApp.git
+- README with complete Cloudflare Worker deployment guide, Apple dev config, sync protocol docs
 
 ## Environment Setup
 
@@ -39,7 +39,7 @@ DailyTrack is a SwiftUI daily task tracker for iOS and macOS. Users define tasks
 - No external Swift dependencies — uses SwiftData, Swift Charts, and SQLite3 C API
 - App Group identifier configured in `AppGroupContainer.swift` for widget data sharing
 - Widget extension is embedded in the main app target via "Embed Foundation Extensions" build phase
-- Both the main app and widget target support iOS, macOS, and visionOS (see `SUPPORTED_PLATFORMS` in build settings)
+- First deploy to a new iPhone will show "Copying shared cache symbols" dialog — this is normal and only happens once per iOS version
 
 **Cloudflare Worker Backend:**
 ```bash
@@ -49,19 +49,14 @@ npm run dev          # local dev server
 npm run deploy       # deploy to Cloudflare
 npm run db:migrate:remote  # apply schema to remote D1
 ```
-- Requires Cloudflare account + Wrangler CLI authenticated
-- D1 database binding configured in `wrangler.toml`
 - D1 database: `dailytrack-sync` (ID: `9670dd0c-ab14-4bdc-aa8f-b674da782f63`)
-- Sync API requires a Bearer token (configured in app Settings)
+- Sync API requires a Bearer token (configured as Cloudflare secret, not in wrangler.toml)
 
 **D1 Time Travel (data recovery):**
 ```bash
 cd cloudflare-worker
-# Get bookmark for a specific time
 npx wrangler d1 time-travel info dailytrack-sync --timestamp "2026-03-04T21:00:00Z" --json
-# Restore to that bookmark
 npx wrangler d1 time-travel restore dailytrack-sync --bookmark "<bookmark_id>"
-# Query current server data
 npx wrangler d1 execute dailytrack-sync --remote --command "SELECT id, name, deleted FROM tasks WHERE deleted = 0"
 ```
 
@@ -89,18 +84,15 @@ DailyTrack/
 │   │   ├── HistoryView.swift            # Charts, calendar heatmap, streak display
 │   │   └── SettingsView.swift           # Task editor, sync config, JSON import/export
 │   ├── Database/
-│   │   └── SeedData.swift               # First-launch seed data
+│   │   └── SeedData.swift               # First-launch seed data (deterministic IDs: seed-*)
 │   ├── Shared/
 │   │   └── AppGroupContainer.swift      # App Group container utilities
 │   ├── Sync/
 │   │   └── SyncManager.swift            # Bidirectional sync (push/pull/reconcile) with Cloudflare D1
 │   └── Localization/
 │       └── Localizable.xcstrings        # EN + DE string catalog
-├── DailyTrack/DailyTrack.entitlements   # Main app entitlements (sandbox, network, app groups)
-├── DailyTrackWidgetExtension.entitlements # Widget entitlements (sandbox, app groups)
 ├── DailyTrackWidget/                    # iOS/macOS widget extension
 │   ├── DailyTrackWidget.swift           # Widget views, timeline provider, score computation
-│   ├── DailyTrackWidget.entitlements    # Widget UI entitlements
 │   ├── ToggleTaskIntent.swift           # AppIntent for toggling checkbox tasks from widget
 │   └── Info.plist
 ├── cloudflare-worker/
@@ -113,71 +105,44 @@ DailyTrack/
 
 ## Architecture
 
-- **SwiftData** models (`TaskDefinition`, `DailyEntry`) with `@Model` macro. Stored in App Group container for widget access. `cumulativePeriod` field added as `String?` (optional) — SwiftData lightweight migration requires new columns to be nullable; a non-optional `String` with a Swift-level default causes a runtime crash (`"Validation error missing attribute values on mandatory destination attribute"`).
+- **SwiftData** models (`TaskDefinition`, `DailyEntry`) with `@Model` macro. Stored in App Group container for widget access. `cumulativePeriod` field is `String?` (optional) — SwiftData lightweight migration requires new columns to be nullable.
 - **MVVM pattern**: `DailyViewModel`, `HistoryViewModel`, `SettingsViewModel` drive the three tab views.
-- **Period window logic**: `periodWindow(for:on:)` helper (duplicated in DailyViewModel, HistoryViewModel, and widget provider) uses `Calendar.dateInterval(of:for:)` to get locale-aware period boundaries. Returns `(startDateStr, endDateStr, periodDays)`. Score calculation uses `entry.value / (benchmark / periodDays)` as the ratio for period-cumulative tasks.
-- **Sync flow**: `SyncManager` is injected as an `@Observable` environment object. On app launch, an initial sync runs. User edits trigger `debouncedSync` (2s delay). Sync order depends on context: **first-ever sync** (epoch timestamp) is pull-only; **first sync of session** (`!hasCompletedInitialSync`) does pull → push → reconcile; **subsequent syncs** do push → pull → reconcile. Conflict resolution is last-write-wins based on `updatedAt` ISO8601 timestamps. Soft-delete pattern: `deleted` flag rather than actual deletion. `hasCompletedInitialSync` (session-scoped) flag gates UI entry creation to prevent zero-value entries from overwriting server data before the first pull completes.
-- **Defensive decoding**: `CodableTaskDefinition.cumulativePeriod` is `String?`. The decoder uses `try?` without a default, so missing/null server fields decode to `nil`. The pull merge only overwrites the local `cumulativePeriod` when the server sent a non-nil value. The push path sends `?? "none"` so the server always gets a concrete value.
-- **Reconcile**: After push and pull, the app sends its list of active task IDs to `POST /reconcile`. The server marks any task not in that list as deleted. **Skipped on first sync** (when `lastSyncTimestamp` is the epoch default) because a fresh device doesn't have the full task set yet — reconciling would incorrectly delete server-only tasks.
-- **Cloudflare Worker** exposes `POST /sync` (upsert), `GET /sync?since=` (pull changes), and `POST /reconcile` (mark stale tasks as deleted). Auth via Bearer token.
-- **Widget** uses App Group shared container to read task data via SwiftData (read-only ModelConfiguration). Timeline refreshes at midnight or every 30 minutes. Three sizes supported: small (score ring only), medium (score ring + 4 task rows), large (today's score ring + 5-day history bar chart). App Intents allow toggling checkbox tasks directly from the widget.
+- **Period window logic**: `periodWindow(for:on:)` helper (duplicated in DailyViewModel, HistoryViewModel, and widget provider) uses `Calendar.dateInterval(of:for:)` to get locale-aware period boundaries.
+- **Sync flow**: `SyncManager` is injected as an `@Observable` environment object. On app launch, an initial sync runs. User edits trigger `debouncedSync` (2s delay). Sync order depends on context:
+  - **First-ever sync** (epoch timestamp): pull-only. Server data always wins over local seed data regardless of timestamps.
+  - **First sync of session** (`!hasCompletedInitialSync`): pull → push → reconcile.
+  - **Subsequent syncs**: push → pull → reconcile.
+- **Conflict resolution**: last-write-wins based on `updatedAt` ISO8601 timestamps, except on first sync where server unconditionally wins.
+- **Defensive decoding**: `CodableTaskDefinition.cumulativePeriod` is `String?`. Decoder uses `try?` without a default. Pull merge only overwrites when server sends non-nil. Push path sends `?? "none"`.
+- **Reconcile**: After push and pull, app sends active task IDs to `POST /reconcile`. Server marks unlisted tasks as deleted. Skipped on first sync.
+- **Cloudflare Worker** exposes `POST /sync` (upsert), `GET /sync?since=` (pull changes), and `POST /reconcile`. Auth via Bearer token. Auto-migrations: `ensureSyncedAtColumn` and `ensureCumulativePeriodColumn`.
+- **Widget** reads from App Group shared container (read-only ModelConfiguration). Timeline refreshes at midnight or every 30 minutes. Three sizes. App Intents allow toggling checkbox tasks.
 
 ## Recent Changes
 
-```
-f783251 Add cumulative period timelines (weekly/monthly/yearly) for cumulative tasks
-17113c1 Update handoff doc with public repo setup session notes
-1c55a9d Update handoff doc with String? migration fix and public copy status
-70e5fe6 Update handoff doc with cumulative period timelines feature
-2af25cc Update handoff doc with reconcile sync fix and D1 recovery notes
-3e01ec6 Redesign large widget and fix macOS widget support
-4d130ef Fix synced entry values not displaying in task row text fields and add handoff doc
-2283ca5 Fix sync issues, add app icon, and fix score calculation
-7942119 Add node_modules to .gitignore
-a9f508f Add iOS widget extension and Cloudflare sync
-5a7a15b Add Xcode project, fix macOS build issues, and improve UI
-fcaecca Restructure to standard Xcode project layout
-d692820 Initial commit: DailyTrack SwiftUI app
-```
+**Session 2026-03-24 (this session):**
+- Deployed Cloudflare Worker — `cumulative_period` column was missing from D1 because the Worker had never been redeployed after the feature was added. Ran migration manually (`ALTER TABLE tasks ADD COLUMN cumulative_period TEXT NOT NULL DEFAULT 'none'`) and deployed Worker.
+- Fixed first-sync pull logic in `SyncManager.swift` — on first sync, server data now unconditionally overwrites local data (seed data has artificially fresh timestamps that were winning last-write-wins). Applied to both task and entry merge loops.
+- Updated server data: set `cumulative_period = 'week'` for "Bewerben" task (was defaulting to "none" because column didn't exist).
+- Added keyboard dismiss button to sync settings in `SettingsView.swift` — `@FocusState` + toolbar "Done" button above keyboard for API URL and Sync Token fields on iOS. Also added `.submitLabel(.done)` to both fields.
 
-**Session 2026-03-17 (continued):**
-- Fixed `cumulativePeriod` being reset to "none" on every pull cycle
-  - Root cause: `CodableTaskDefinition` decoded `cumulativePeriod` with `?? "none"` default, so servers that don't return the field would produce "none" and overwrite the local "week"/"month"/"year" value during pull merge.
-  - Fix: Made `cumulativePeriod` a `String?` in both `TaskDefinition` and `CodableTaskDefinition`. Decoder uses `try?` without a default. Pull merge only overwrites when the server sends a non-nil value. Push path uses `?? "none"` to always send a concrete value to the server.
-  - Files changed: `TaskDefinition.swift`, `SyncManager.swift`
-
-**Session 2026-03-17:**
-- Fixed sync bug where reinstalling the app (e.g. after 7-day free provisioning expiry) would overwrite server data with zero-value entries
-- Root cause: `DailyViewModel.loadData()` eagerly creates `DailyEntry(value: 0)` for every task on `onAppear` — these get fresh `updatedAt` timestamps. The sync then pushes them before pulling, and they win last-write-wins against the real data on the server.
-- Fix has two parts:
-  1. **Entry creation gating**: `SyncManager.hasCompletedInitialSync` (session-scoped, starts `false` when sync is enabled) prevents `DailyViewModel.loadData()` from creating new entries until the first sync of the session completes. `DailyView` observes this flag and reloads with entry creation enabled after sync.
-  2. **Sync order**: Three-branch sync logic — true first sync (epoch timestamp) is pull-only; first sync of session (`!hasCompletedInitialSync`) does pull → push → reconcile; subsequent syncs do push → pull → reconcile.
-- Files changed: `SyncManager.swift`, `DailyViewModel.swift`, `DailyView.swift`
-
-**Session 2026-03-10:**
-- Committed the cumulative period timelines feature (12 files, `f783251`) — previously sitting uncommitted since 2026-03-06
-- No code changes needed; working tree is clean
-
-**Session 2026-03-06:**
-- Created public repo at https://github.com/Kaczor594/DailyTrackApp.git and pushed
-- Expanded public README with complete setup/deployment guide
-- Audited public repo for personal information — no secrets or credentials exposed
+**Uncommitted changes (2 files, +24 lines):**
+- `SyncManager.swift`: `isFirstSync` flag passed into merge logic; `serverWins = isFirstSync || remoteTask.updatedAt > local.updatedAt` replaces bare timestamp comparison
+- `SettingsView.swift`: `@FocusState` property, `.focused()` modifiers on text fields, keyboard toolbar with Done button
 
 ## Known Issues
 
-- **macOS widget debugging**: The WidgetKit Simulator (`WidgetKit_Simulator.WidgetDocument.Error error 5`) does not work for debugging widgets on Mac. Use the main app scheme instead and add the widget via Notification Center.
-- **CoreData recovery log on fresh install**: Fresh installs show `CoreData: error: During recovery, parent directory path reported as missing` followed by `Recovery attempt... was successful!` — this is harmless; CoreData auto-creates the missing App Group directory.
+- **macOS widget debugging**: WidgetKit Simulator doesn't work for Mac debugging. Use main app scheme and add widget via Notification Center.
+- **CoreData recovery log on fresh install**: Harmless `CoreData: error: During recovery, parent directory path reported as missing` followed by `Recovery attempt... was successful!`.
+- **Seed data still has stale values**: `SeedData.swift` has `isCheckbox: true` for Putzen and no cumulative settings for Bewerben. These are wrong relative to the current server state. Not a bug anymore (first-sync server-wins fixes it), but the seed file is misleading. Consider updating it to match reality.
+- **`periodWindow(for:on:)` duplicated** in DailyViewModel, HistoryViewModel, and widget provider. Should be extracted to a shared utility.
 - Public repo README architecture section shows `Sources/` prefix in the tree but the actual Xcode project doesn't use that intermediate directory.
 
 ## Next Steps
 
-- [x] Commit the cumulative period timelines feature (12 modified files) in the private repo
-- [x] Fix reinstall sync bug (push-before-pull + eager entry creation)
-- [x] Fix `cumulativePeriod` reset bug (defensive optional decoding + conditional pull merge)
-- [ ] Test reinstall sync fix: let app expire on phone → rebuild from Xcode → verify it pulls server data without overwriting today's entries
-- [ ] Deploy updated Cloudflare Worker (`cd cloudflare-worker && npx wrangler deploy`) to apply `ensureCumulativePeriodColumn` migration
-- [ ] Test: edit a task → toggle Cumulative → select "Weekly" → set benchmark to 10 → verify badge shows ~70% for 1 entry, cumulative badge shows "1/10 this week"
-- [ ] Test: navigate to a different week → verify cumulative total resets to that week's entries
-- [ ] Extract `periodWindow(for:on:)` into a shared utility (currently duplicated in DailyViewModel, HistoryViewModel, and widget provider)
-- [ ] Add error UI for sync failures (currently only sets `lastError` string, not surfaced to user)
-- [ ] Consider adding pull-to-refresh gesture on DailyView to trigger manual sync
+- [ ] Test reinstall sync fix on phone: delete app → rebuild from Xcode → verify Putzen is x/1 and Bewerben has weekly cumulative
+- [ ] Update `SeedData.swift` to match current task definitions (Putzen as x/1, Bewerben as weekly cumulative with benchmark 12)
+- [ ] Extract `periodWindow(for:on:)` into a shared utility (currently duplicated in 3 places)
+- [ ] Add error UI for sync failures (`lastError` is set but not surfaced to user beyond a red caption in Settings)
+- [ ] Consider pull-to-refresh gesture on DailyView to trigger manual sync
+- [ ] Update public repo with latest changes
