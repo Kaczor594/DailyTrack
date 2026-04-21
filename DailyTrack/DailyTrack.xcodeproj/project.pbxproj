@@ -58,6 +58,7 @@
 				Models/DailyEntry.swift,
 				Models/TaskDefinition.swift,
 				Shared/AppGroupContainer.swift,
+				Shared/PeriodWindow.swift,
 			);
 			target = F251A5AD2F32CB8E00C7D823 /* DailyTrackWidgetExtension */;
 		};

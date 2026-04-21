@@ -156,7 +156,7 @@ final class SyncManager {
 
         let payload: [String: Any] = [
             "tasks": allTasks.map { t -> [String: Any] in
-                [
+                var dict: [String: Any] = [
                     "id": t.id, "name": t.name, "benchmark": t.benchmark,
                     "unit": t.unit, "weight": t.weight,
                     "is_cumulative": t.isCumulative, "cumulative_period": t.cumulativePeriod ?? "none",
@@ -165,6 +165,8 @@ final class SyncManager {
                     "created_at": t.createdAt, "updated_at": t.updatedAt,
                     "deleted": t.deleted
                 ]
+                if let anchor = t.periodAnchor { dict["period_anchor"] = anchor }
+                return dict
             },
             "entries": allEntries.map { e -> [String: Any] in
                 var dict: [String: Any] = [
@@ -282,6 +284,10 @@ final class SyncManager {
                     if let remotePeriod = remoteTask.cumulativePeriod {
                         local.cumulativePeriod = remotePeriod
                     }
+                    // Same defensive pattern for periodAnchor.
+                    if let remoteAnchor = remoteTask.periodAnchor {
+                        local.periodAnchor = remoteAnchor
+                    }
                     local.isCheckbox = remoteTask.isCheckbox
                     local.sortOrder = remoteTask.sortOrder
                     local.isActive = remoteTask.isActive
@@ -312,6 +318,7 @@ final class SyncManager {
                     weight: remoteTask.weight,
                     isCumulative: remoteTask.isCumulative,
                     cumulativePeriod: remoteTask.cumulativePeriod,
+                    periodAnchor: remoteTask.periodAnchor,
                     isCheckbox: remoteTask.isCheckbox,
                     sortOrder: remoteTask.sortOrder,
                     isActive: remoteTask.isActive,

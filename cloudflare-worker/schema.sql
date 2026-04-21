@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     weight REAL NOT NULL DEFAULT 1.0,
     is_cumulative INTEGER NOT NULL DEFAULT 0,
     cumulative_period TEXT NOT NULL DEFAULT 'none',
+    period_anchor INTEGER,
     is_checkbox INTEGER NOT NULL DEFAULT 0,
     sort_order INTEGER NOT NULL DEFAULT 0,
     is_active INTEGER NOT NULL DEFAULT 1,

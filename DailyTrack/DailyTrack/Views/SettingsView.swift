@@ -246,6 +246,8 @@ struct TaskEditorSheet: View {
     @State private var weight: String = "1"
     @State private var isCumulative: Bool = false
     @State private var cumulativePeriod: String = "none"
+    /// nil means "locale default"; 1=Sunday..7=Saturday matches `Calendar.weekday`.
+    @State private var periodAnchor: Int? = nil
     @State private var isCheckbox: Bool = false
 
     var isEditing: Bool { task != nil }
@@ -290,6 +292,19 @@ struct TaskEditorSheet: View {
                             Text(String(localized: "Weekly")).tag("week")
                             Text(String(localized: "Monthly")).tag("month")
                             Text(String(localized: "Yearly")).tag("year")
+                        }
+
+                        if cumulativePeriod == "week" {
+                            Picker(String(localized: "Week Starts On"), selection: $periodAnchor) {
+                                Text(String(localized: "Locale Default")).tag(nil as Int?)
+                                Text(String(localized: "Sunday")).tag(1 as Int?)
+                                Text(String(localized: "Monday")).tag(2 as Int?)
+                                Text(String(localized: "Tuesday")).tag(3 as Int?)
+                                Text(String(localized: "Wednesday")).tag(4 as Int?)
+                                Text(String(localized: "Thursday")).tag(5 as Int?)
+                                Text(String(localized: "Friday")).tag(6 as Int?)
+                                Text(String(localized: "Saturday")).tag(7 as Int?)
+                            }
                         }
                     }
                 } header: {
@@ -338,6 +353,7 @@ struct TaskEditorSheet: View {
                     weight = String(t.weight)
                     isCumulative = t.isCumulative
                     cumulativePeriod = t.cumulativePeriod ?? "none"
+                    periodAnchor = t.periodAnchor
                     isCheckbox = t.isCheckbox
                 }
             }
@@ -357,6 +373,10 @@ struct TaskEditorSheet: View {
         let benchVal = Double(benchmark.replacingOccurrences(of: ",", with: ".")) ?? 1.0
         let weightVal = Double(weight.replacingOccurrences(of: ",", with: ".")) ?? 1.0
 
+        // Anchor only meaningful for weekly tasks; clear it otherwise so stale
+        // values from a previous period selection don't linger.
+        let anchorToSave = (isCumulative && cumulativePeriod == "week") ? periodAnchor : nil
+
         if let existing = task {
             // Update existing managed object
             existing.name = name.trimmingCharacters(in: .whitespaces)
@@ -365,6 +385,7 @@ struct TaskEditorSheet: View {
             existing.weight = weightVal
             existing.isCumulative = isCumulative
             existing.cumulativePeriod = cumulativePeriod
+            existing.periodAnchor = anchorToSave
             existing.isCheckbox = isCheckbox
             onSave(existing)
         } else {
@@ -375,6 +396,7 @@ struct TaskEditorSheet: View {
                 weight: weightVal,
                 isCumulative: isCumulative,
                 cumulativePeriod: cumulativePeriod,
+                periodAnchor: anchorToSave,
                 isCheckbox: isCheckbox
             )
             onSave(result)

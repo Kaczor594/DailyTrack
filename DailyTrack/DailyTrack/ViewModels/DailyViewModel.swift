@@ -114,29 +114,6 @@ final class DailyViewModel {
         return entries.reduce(0) { $0 + $1.value }
     }
 
-    // MARK: - Period Window
-
-    /// Returns the start date string, end date string, and number of days for the
-    /// period window containing `date`, based on the task's cumulativePeriod.
-    func periodWindow(for task: TaskDefinition, on date: Date) -> (startDateStr: String, endDateStr: String, periodDays: Int)? {
-        let calendar = Calendar.current
-        let component: Calendar.Component
-        guard let period = task.cumulativePeriod else { return nil }
-        switch period {
-        case "week": component = .weekOfYear
-        case "month": component = .month
-        case "year": component = .year
-        default: return nil
-        }
-        guard let interval = calendar.dateInterval(of: component, for: date) else { return nil }
-        let startStr = dateFormatter.string(from: interval.start)
-        // End of interval is the start of the next period; subtract 1 day
-        let endDate = calendar.date(byAdding: .day, value: -1, to: interval.end)!
-        let endStr = dateFormatter.string(from: endDate)
-        let days = calendar.dateComponents([.day], from: interval.start, to: interval.end).day ?? 1
-        return (startStr, endStr, days)
-    }
-
     func calculateDailyScore() {
         let scoringTasks = taskProgressList.filter { !$0.task.isCumulative || $0.task.hasPeriod }
         let totalWeight = scoringTasks.reduce(0.0) { $0 + $1.task.weight }

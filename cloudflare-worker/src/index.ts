@@ -11,6 +11,15 @@ async function ensureCumulativePeriodColumn(db: D1Database) {
   }
 }
 
+async function ensurePeriodAnchorColumn(db: D1Database) {
+  // Nullable: null means "use locale default" on the client.
+  try {
+    await db.prepare("SELECT period_anchor FROM tasks LIMIT 1").first();
+  } catch {
+    await db.prepare("ALTER TABLE tasks ADD COLUMN period_anchor INTEGER").run();
+  }
+}
+
 async function ensureSyncedAtColumn(db: D1Database) {
   // Auto-migration: add synced_at column if it doesn't exist.
   // synced_at uses server time and is used for pull queries,
@@ -49,6 +58,7 @@ export default {
     // Run migrations if needed
     await ensureSyncedAtColumn(env.DB);
     await ensureCumulativePeriodColumn(env.DB);
+    await ensurePeriodAnchorColumn(env.DB);
 
     const url = new URL(request.url);
     const path = url.pathname;
@@ -104,9 +114,15 @@ export default {
               }
             }
 
+            // period_anchor is optional. Client omits the key when nil
+            // ("use locale default"); preserve null in that case.
+            const periodAnchor = (task.period_anchor === undefined || task.period_anchor === null)
+              ? null
+              : task.period_anchor;
+
             await env.DB.prepare(`
-              INSERT INTO tasks (id, name, benchmark, unit, weight, is_cumulative, cumulative_period, is_checkbox, sort_order, is_active, created_at, updated_at, deleted, synced_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              INSERT INTO tasks (id, name, benchmark, unit, weight, is_cumulative, cumulative_period, period_anchor, is_checkbox, sort_order, is_active, created_at, updated_at, deleted, synced_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
               ON CONFLICT(id) DO UPDATE SET
                 name = excluded.name,
                 benchmark = excluded.benchmark,
@@ -114,6 +130,7 @@ export default {
                 weight = excluded.weight,
                 is_cumulative = excluded.is_cumulative,
                 cumulative_period = excluded.cumulative_period,
+                period_anchor = excluded.period_anchor,
                 is_checkbox = excluded.is_checkbox,
                 sort_order = excluded.sort_order,
                 is_active = excluded.is_active,
@@ -123,6 +140,7 @@ export default {
             `).bind(
               task.id, task.name, task.benchmark, task.unit, task.weight,
               task.is_cumulative ? 1 : 0, task.cumulative_period || 'none',
+              periodAnchor,
               task.is_checkbox ? 1 : 0,
               task.sort_order, task.is_active ? 1 : 0,
               task.created_at, task.updated_at, task.deleted ? 1 : 0,

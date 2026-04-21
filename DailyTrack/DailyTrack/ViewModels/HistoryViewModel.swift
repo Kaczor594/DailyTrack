@@ -214,23 +214,4 @@ final class HistoryViewModel {
         }
     }
 
-    // MARK: - Period Window
-
-    private func periodWindow(for task: TaskDefinition, on date: Date) -> (startDateStr: String, endDateStr: String, periodDays: Int)? {
-        let calendar = Calendar.current
-        let component: Calendar.Component
-        guard let period = task.cumulativePeriod else { return nil }
-        switch period {
-        case "week": component = .weekOfYear
-        case "month": component = .month
-        case "year": component = .year
-        default: return nil
-        }
-        guard let interval = calendar.dateInterval(of: component, for: date) else { return nil }
-        let startStr = dateFormatter.string(from: interval.start)
-        let endDate = calendar.date(byAdding: .day, value: -1, to: interval.end)!
-        let endStr = dateFormatter.string(from: endDate)
-        let days = calendar.dateComponents([.day], from: interval.start, to: interval.end).day ?? 1
-        return (startStr, endStr, days)
-    }
 }

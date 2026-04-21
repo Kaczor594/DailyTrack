@@ -241,6 +241,9 @@
         }
       }
     },
+    "Friday" : {
+
+    },
     "game/chapter" : {
       "localizations" : {
         "de" : {
@@ -314,6 +317,12 @@
     "Last sync" : {
 
     },
+    "Locale Default" : {
+
+    },
+    "Monday" : {
+
+    },
     "Month" : {
       "localizations" : {
         "de" : {
@@ -376,6 +385,9 @@
         }
       }
     },
+    "Saturday" : {
+
+    },
     "Save" : {
       "localizations" : {
         "de" : {
@@ -429,6 +441,9 @@
         }
       }
     },
+    "Sunday" : {
+
+    },
     "Sync Now" : {
 
     },
@@ -473,6 +488,9 @@
     "this year" : {
 
     },
+    "Thursday" : {
+
+    },
     "Today" : {
       "localizations" : {
         "de" : {
@@ -493,6 +511,9 @@
         }
       }
     },
+    "Tuesday" : {
+
+    },
     "Unit (e.g., hours, pages)" : {
       "localizations" : {
         "de" : {
@@ -503,6 +524,9 @@
         }
       }
     },
+    "Wednesday" : {
+
+    },
     "Week" : {
       "localizations" : {
         "de" : {
@@ -512,6 +536,9 @@
           }
         }
       }
+    },
+    "Week Starts On" : {
+
     },
     "Weekly" : {
 

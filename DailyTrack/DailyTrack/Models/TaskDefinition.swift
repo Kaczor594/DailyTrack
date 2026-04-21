@@ -11,6 +11,11 @@ final class TaskDefinition {
     var weight: Double
     var isCumulative: Bool
     var cumulativePeriod: String?
+    /// Anchor day for the period window.
+    /// - Weekly: weekday (1=Sunday..7=Saturday, matching `Calendar.weekday`).
+    /// - `nil` means "use locale default" — preserves pre-existing behavior and
+    ///   guarantees SwiftData lightweight migration (new columns must be nullable).
+    var periodAnchor: Int?
     var isCheckbox: Bool
     var sortOrder: Int
     var isActive: Bool
@@ -35,6 +40,7 @@ final class TaskDefinition {
         weight: Double = 1.0,
         isCumulative: Bool = false,
         cumulativePeriod: String? = nil,
+        periodAnchor: Int? = nil,
         isCheckbox: Bool = false,
         sortOrder: Int = 0,
         isActive: Bool = true,
@@ -49,6 +55,7 @@ final class TaskDefinition {
         self.weight = weight
         self.isCumulative = isCumulative
         self.cumulativePeriod = cumulativePeriod
+        self.periodAnchor = periodAnchor
         self.isCheckbox = isCheckbox
         self.sortOrder = sortOrder
         self.isActive = isActive
@@ -74,6 +81,9 @@ struct CodableTaskDefinition: Codable {
     /// that predates the cumulative-period feature). The pull merge should
     /// preserve the local value in that case rather than overwriting with "none".
     var cumulativePeriod: String?
+    /// nil when the server omits the field (old Worker). Same defensive rule as
+    /// `cumulativePeriod`: pull merge should only overwrite when server sends a value.
+    var periodAnchor: Int?
     var isCheckbox: Bool
     var sortOrder: Int
     var isActive: Bool
@@ -86,6 +96,7 @@ struct CodableTaskDefinition: Codable {
         case id, name, benchmark, unit, weight
         case isCumulative = "is_cumulative"
         case cumulativePeriod = "cumulative_period"
+        case periodAnchor = "period_anchor"
         case isCheckbox = "is_checkbox"
         case sortOrder = "sort_order"
         case isActive = "is_active"
@@ -103,6 +114,7 @@ struct CodableTaskDefinition: Codable {
         weight = try c.decode(Double.self, forKey: .weight)
         isCumulative = (try c.decode(Int.self, forKey: .isCumulative)) != 0
         cumulativePeriod = try? c.decode(String.self, forKey: .cumulativePeriod)
+        periodAnchor = try? c.decode(Int.self, forKey: .periodAnchor)
         isCheckbox = (try c.decode(Int.self, forKey: .isCheckbox)) != 0
         sortOrder = try c.decode(Int.self, forKey: .sortOrder)
         isActive = (try c.decode(Int.self, forKey: .isActive)) != 0
@@ -119,6 +131,7 @@ struct CodableTaskDefinition: Codable {
         self.weight = task.weight
         self.isCumulative = task.isCumulative
         self.cumulativePeriod = task.cumulativePeriod ?? "none"
+        self.periodAnchor = task.periodAnchor
         self.isCheckbox = task.isCheckbox
         self.sortOrder = task.sortOrder
         self.isActive = task.isActive
