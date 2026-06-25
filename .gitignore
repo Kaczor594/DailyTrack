@@ -30,3 +30,8 @@ Package.resolved
 *.db-wal
 *.db-shm
 node_modules/
+
+# Internal dev notes
+CLAUDE.md
+CLAUDE_HANDOFF.md
+.claude/
