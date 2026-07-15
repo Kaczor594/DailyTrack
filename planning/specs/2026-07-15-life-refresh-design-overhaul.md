@@ -2,7 +2,7 @@
 created: 2026-07-15
 modified: [2026-07-15]
 sessions: [2026-07-15]
-commits: [bce0b18, 52eec55, 4383777, b566bd3]
+commits: [bce0b18, 52eec55, 4383777, b566bd3, c2631ef]
 back_refs:
   - CLAUDE_HANDOFF.md#next-steps
   - https://claude.ai/design/p/e686602b-8427-4a34-b26d-b75aa54cb714 (Isaac Kaczor Design System — colors_and_type.css is source of truth; README there is stale blue/Inter direction)
@@ -98,18 +98,18 @@ Final weights: Municipal 4.0 (unchanged, top work priority), GC Vorbereitung 2.0
 
 ## Phase 4 — Theme foundation (plumbing only)
 
-- [ ] Download 7 static TTFs + OFL licenses into `DailyTrack/DailyTrack/Fonts/` (Fraunces: undercasetype/Fraunces release or google/fonts static; Geist/GeistMono: vercel/geist-font releases)
-- [ ] Verify PostScript names via CoreText one-liner; hardcode verified names in Theme.swift
-- [ ] `Theme.xcassets`: colorsets light/dark — ThemeBackground #F8F5EE/#15140F, ThemeSurface #F2EEE4/#211F1A, ThemePanel #E8E2D2/#322F27, ThemeDivider #D8CFB8/#454339, ThemeInk #0E0D09/#FDFCF8, ThemeInkSecondary #5E5C52/#A8A59A, ThemeInkTertiary #807D72/#807D72, ThemeBrand #3E5A32/#8FA474, ThemeBrandSubtle #E6EBDD/#1F301A, ThemeTerra #B96F3E/#D29972, ThemeTerraSubtle #F4E4D7/#6D3E20, ThemePositive #5F784A/#8FA474, ThemeNegative #A63826/#C4573C (dark tint is derived, not in token file — Isaac sign-off), ThemeWarning #92552D/#D29972, ThemeInfo #3E5F74/#7A98A9, ChartMoss/Terra/Sky/Dust/Stone/Sage, HeatmapZero #CDCAC0/#454339 + HeatmapL1–L4 moss ramp (inverted in dark so intensity rises with score)
-- [ ] `Theme.swift`: Color accessors, `chartSeries`, unified `scoreColor(ratio:)` (0→ink-tertiary; <0.4→negative; <0.7→terra; <0.9→dust; ≥0.9→brand), `heatmapColor(score:)` + label-contrast helper, radii (card 8/control 4/bar 2), font helpers display/body/mono
-- [ ] `FontRegistration.swift`: `CTFontManagerRegisterFontsForURL(_, .process, nil)` over bundled TTFs; call from `DailyTrackApp.init()` + new `DailyTrackWidgetBundle.init()`
-- [ ] pbxproj: add Theme/Theme.swift, Theme/FontRegistration.swift, Theme/Theme.xcassets, Fonts/*.ttf to exception set `F251A5C82F32D14D00C7D823`
-- [ ] Fill AccentColor (app + widget) with #3E5A32/#8FA474; WidgetBackground #F8F5EE/#15140F
+- [x] Download 7 static TTFs + OFL licenses into `DailyTrack/DailyTrack/Fonts/` (Fraunces 1.000 release has no Medium cut → used Fraunces72pt-Regular + SemiBold, matching the token file's weight-400 display convention; 2 OFL files — vercel/geist-font ships one license covering Geist + Geist Mono)
+- [x] Verify PostScript names via CoreText: Fraunces72pt-Regular, Fraunces72pt-SemiBold, Geist-Regular/-Medium/-SemiBold, GeistMono-Regular/-Medium — hardcoded in Theme.swift
+- [x] `Theme.xcassets`: colorsets light/dark — ThemeBackground #F8F5EE/#15140F, ThemeSurface #F2EEE4/#211F1A, ThemePanel #E8E2D2/#322F27, ThemeDivider #D8CFB8/#454339, ThemeInk #0E0D09/#FDFCF8, ThemeInkSecondary #5E5C52/#A8A59A, ThemeInkTertiary #807D72/#807D72, ThemeBrand #3E5A32/#8FA474, ThemeBrandSubtle #E6EBDD/#1F301A, ThemeTerra #B96F3E/#D29972, ThemeTerraSubtle #F4E4D7/#6D3E20, ThemePositive #5F784A/#8FA474, ThemeNegative #A63826/#C4573C (dark tint is derived, not in token file — Isaac sign-off), ThemeWarning #92552D/#D29972, ThemeInfo #3E5F74/#7A98A9, ChartMoss/Terra/Sky/Dust/Stone/Sage, HeatmapZero #CDCAC0/#454339 + HeatmapL1–L4 moss ramp (inverted in dark so intensity rises with score)
+- [x] `Theme.swift`: Color accessors, `chartSeries`, unified `scoreColor(ratio:)` (0→ink-tertiary; <0.4→negative; <0.7→terra; <0.9→dust; ≥0.9→brand), `heatmapColor(score:)` + label-contrast helper, radii (card 8/control 4/bar 2), font helpers display/body/mono
+- [x] `FontRegistration.swift`: `CTFontManagerRegisterFontsForURL(_, .process, nil)` over bundled TTFs; called from `DailyTrackApp.init()` + new `DailyTrackWidgetBundle.init()`
+- [x] pbxproj: added Theme/Theme.swift, Theme/FontRegistration.swift, Theme/Theme.xcassets, Fonts/*.ttf to exception set `F251A5C82F32D14D00C7D823`
+- [x] Filled AccentColor (app + widget) with #3E5A32/#8FA474; WidgetBackground #F8F5EE/#15140F
 
 **Validation (gate):**
-- Both xcodebuild commands → `** BUILD SUCCEEDED **`
-- `ls .../DerivedData/DailyTrack-*/Build/Products/Debug/DailyTrack.app/Contents/Resources/*.ttf | wc -l` → 7; same inside `Contents/PlugIns/DailyTrackWidgetExtension.appex/Contents/Resources/` → 7
-- Manual: Mac app runs, accent is moss, no font-fallback console warnings
+- [x] Both xcodebuild commands → `** BUILD SUCCEEDED **` (2026-07-15)
+- [x] 7 TTFs in DailyTrack.app/Contents/Resources AND in DailyTrackWidgetExtension.appex/Contents/Resources; ThemeBrand present in both compiled Assets.car
+- [ ] Manual: Mac app runs, accent is moss, no font-fallback console warnings (user check; fonts verified via CoreText pre-bundle)
 
 ## Phase 5 — App restyle (light + dark)
 

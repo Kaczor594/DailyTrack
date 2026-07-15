@@ -7,6 +7,9 @@ struct DailyTrackApp: App {
     @State private var syncManager = SyncManager()
 
     init() {
+        // Register bundled design-system fonts (Fraunces, Geist, Geist Mono)
+        FontRegistration.registerBundledFonts()
+
         // Migrate existing store to App Group container if needed
         AppGroupContainer.migrateExistingStoreIfNeeded()
 

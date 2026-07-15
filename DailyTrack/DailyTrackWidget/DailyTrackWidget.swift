@@ -556,6 +556,11 @@ struct DailyTrackWidgetEntryView: View {
 
 @main
 struct DailyTrackWidgetBundle: WidgetBundle {
+    init() {
+        // Register bundled design-system fonts in the extension process
+        FontRegistration.registerBundledFonts()
+    }
+
     var body: some Widget {
         DailyTrackWidget()
     }

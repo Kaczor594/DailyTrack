@@ -55,10 +55,20 @@
 		F251A5C82F32D14D00C7D823 /* Exceptions for "DailyTrack" folder in "DailyTrackWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Fonts/Fraunces72pt-Regular.ttf,
+				Fonts/Fraunces72pt-SemiBold.ttf,
+				Fonts/Geist-Medium.ttf,
+				Fonts/Geist-Regular.ttf,
+				Fonts/Geist-SemiBold.ttf,
+				Fonts/GeistMono-Medium.ttf,
+				Fonts/GeistMono-Regular.ttf,
 				Models/DailyEntry.swift,
 				Models/TaskDefinition.swift,
 				Shared/AppGroupContainer.swift,
 				Shared/PeriodWindow.swift,
+				Theme/FontRegistration.swift,
+				Theme/Theme.swift,
+				Theme/Theme.xcassets,
 			);
 			target = F251A5AD2F32CB8E00C7D823 /* DailyTrackWidgetExtension */;
 		};
