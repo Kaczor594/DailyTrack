@@ -50,7 +50,7 @@ struct SeedData {
                 name: "Municipal Analytics",
                 benchmark: 87.5,
                 unit: NSLocalizedString("hours", comment: ""),
-                weight: 4.0,
+                weight: 5.0,
                 isCumulative: true,
                 cumulativePeriod: "month",
                 isCheckbox: false,
@@ -59,7 +59,7 @@ struct SeedData {
             TaskDefinition(
                 id: "seed-gc-vorbereitung",
                 name: "GC Vorbereitung",
-                benchmark: 1.0,
+                benchmark: 2.0,
                 unit: NSLocalizedString("hours", comment: ""),
                 weight: 2.0,
                 isCumulative: false,

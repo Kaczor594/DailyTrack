@@ -2,7 +2,7 @@
 created: 2026-07-15
 modified: [2026-07-15]
 sessions: [2026-07-15]
-commits: [bce0b18, 52eec55, 4383777]
+commits: [bce0b18, 52eec55, 4383777, b566bd3]
 back_refs:
   - CLAUDE_HANDOFF.md#next-steps
   - https://claude.ai/design/p/e686602b-8427-4a34-b26d-b75aa54cb714 (Isaac Kaczor Design System — colors_and_type.css is source of truth; README there is stale blue/Inter direction)
@@ -171,5 +171,7 @@ Encoding in existing `periodAnchor: Int?` (no model/schema/Worker changes): mont
 - Cross-cutting: validation via real xcodebuild only (LSP unreliable here); no new @Model fields anywhere → zero SwiftData migration risk; stage files explicitly; never .DS_Store/xcuserdata.
 
 ## Amendments
+
+**2026-07-15 (later) — weight-principle pass.** Isaac's rule: task weight ≈ hours/day (weekly-cumulative ≈ hours/week); saved to global memory. Applied via D1 + SeedData after Phases 1–3 landed: GC Vorbereitung benchmark 1→2 h/day (weight stays 2); Municipal weight 4→5 (mirrors real ≈4.9 h/day July crunch; app's derived daily target stays ≈2.8 since the monthly window spans all of July); 7 routine checkboxes (Staubsaugen, Schach, Geschirr Spülen, Küche Putzen, Aufräumen, Personal Grooming, Nachtzeit-Routine) 1.0→0.5. Training, DAV Studieren, Kochen, Nebenprojekt, Wäsche stay 1.0.
 
 **2026-07-15 — Phase 1 adjusted to live server state.** Snapshot showed heavy user customization since seed: 17 active tasks; Municipal already weight 4 (daily 4 Stunden, non-cumulative); Bewerben now weekly-cumulative 12/week; Putzen weekly-cumulative weight 5; Claude Nutzung weekly 100 weight 5 anchor Wed; DAV Studieren checkbox exists; seed-schach-lesen/-nebenprojekt/-aktuarwissenschaft already deleted (replaced by user's own tasks). July municipal entries: none (backfill 9.5 confirmed correct). User chose (AskUserQuestion): **minimal touch** — Municipal keeps weight 4 (only becomes monthly 87.5 Stunden), GC Vorbereitung added at weight 2 sort_order 17, no other weight changes (Putzen/Claude Nutzung deliberate); "demote putzen/schach-lesen" tasks dropped. Units stay German ("Stunden"). GC task confirmed as new task, not a Bewerben repurpose.
