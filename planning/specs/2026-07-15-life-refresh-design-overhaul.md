@@ -2,12 +2,12 @@
 created: 2026-07-15
 modified: [2026-07-15]
 sessions: [2026-07-15]
-commits: []
+commits: [bce0b18]
 back_refs:
   - CLAUDE_HANDOFF.md#next-steps
   - https://claude.ai/design/p/e686602b-8427-4a34-b26d-b75aa54cb714 (Isaac Kaczor Design System — colors_and_type.css is source of truth; README there is stale blue/Inter direction)
 forward_refs: []
-status: draft
+status: in-progress
 ---
 
 # Life Refresh + Design-System Overhaul
@@ -58,21 +58,21 @@ User decisions (2026-07-15): bundle real TTFs; remove Bewerben; municipal→mont
 
 Time-sensitive; zero app-code changes. Prerequisite: `npx wrangler whoami` succeeds (user runs `npx wrangler login` if not).
 
-- [ ] `cd cloudflare-worker && npm run deploy`
-- [ ] Verify `period_anchor` in `pragma_table_info('tasks')`; if absent run `ALTER TABLE tasks ADD COLUMN period_anchor INTEGER`
-- [ ] Snapshot: `SELECT id, name, benchmark, unit, weight, is_cumulative, cumulative_period, sort_order, is_active, deleted, updated_at FROM tasks ORDER BY sort_order` → record output under Notes; adjust assumptions if server differs from seed expectations
-- [ ] Soft-delete `seed-bewerben` (tasks + its daily_entries), fresh `updated_at`/`synced_at`
-- [ ] `seed-municipal-analytics` → `is_cumulative=1, cumulative_period='month', benchmark=87.5, unit='hours', weight=3.0`
-- [ ] INSERT `seed-gc-vorbereitung` — 'GC Vorbereitung', benchmark 1.0, unit 'hours', weight 2.0, is_cumulative 0, cumulative_period 'none', is_checkbox 0, sort_order 3, is_active 1, deleted 0, fresh created/updated/synced (omit `period_anchor` from column list)
-- [ ] `seed-putzen`, `seed-schach-lesen` → weight 0.5
-- [ ] Backfill `daily_entries` id `seed-municipal-analytics-2026-07-10`, value 9.5, notes 'Catch-up: hours worked 1–15 Jul', `ON CONFLICT(id) DO UPDATE SET value=9.5, deleted=0, notes=excluded.notes, updated_at=excluded.updated_at, synced_at=excluded.synced_at`
+- [x] `cd cloudflare-worker && npm run deploy` → version 5bace853, https://dailytrack-api.isaac-kaczor.workers.dev
+- [x] Verify `period_anchor` in `pragma_table_info('tasks')` → present (auto-migration ran)
+- [x] Snapshot taken 2026-07-15 (see Amendments — live state diverged heavily from seed; plan adjusted per user)
+- [x] Soft-delete `seed-bewerben` (tasks + its daily_entries), fresh `updated_at`/`synced_at`
+- [x] `seed-municipal-analytics` → `is_cumulative=1, cumulative_period='month', benchmark=87.5` (weight stays 4, unit stays 'Stunden' — amended)
+- [x] INSERT `seed-gc-vorbereitung` — 'GC Vorbereitung', benchmark 1.0, unit 'Stunden', weight 2.0, sort_order 17 (amended)
+- [x] ~~`seed-putzen`, `seed-schach-lesen` → weight 0.5~~ dropped per amendment (minimal touch; schach-lesen already deleted)
+- [x] Backfill `daily_entries` id `seed-municipal-analytics-2026-07-10`, value 9.5, notes 'Catch-up: hours worked 1-15 Jul'
 
-Final weights (daily-score share): Municipal 3.0 (37.5%), GC Vorbereitung 2.0 (25%), Nebenprojekt 1.0, Training 1.0, Putzen 0.5, Schach/Lesen 0.5. Aktuarwissenschaft stays 1.0 (lifetime-cumulative → score-exempt).
+Final weights: Municipal 4.0 (unchanged, top work priority), GC Vorbereitung 2.0 (new), all other user-set weights untouched (Putzen 5, Claude Nutzung 5, rest 0.5–1).
 
 **Validation (gate — do not start Phase 2 until these pass):**
-- `npx wrangler d1 execute dailytrack-sync --remote --json --command "SELECT id, name, benchmark, unit, weight, is_cumulative, cumulative_period, sort_order, deleted FROM tasks ORDER BY sort_order"` → `seed-bewerben` deleted=1; `seed-municipal-analytics` benchmark=87.5, weight=3, is_cumulative=1, cumulative_period='month'; `seed-gc-vorbereitung` present, weight=2, sort_order=3; putzen/schach-lesen weight=0.5
-- `npx wrangler d1 execute dailytrack-sync --remote --json --command "SELECT id, date, value, deleted FROM daily_entries WHERE task_id='seed-municipal-analytics' AND date>='2026-07-01'"` → row `seed-municipal-analytics-2026-07-10` value=9.5 deleted=0
-- Manual: device Sync Now → GC Vorbereitung visible, Bewerben gone, municipal shows month progress 9.5/87.5
+- [x] `npx wrangler d1 execute dailytrack-sync --remote --json --command "SELECT ..."` → PASSED 2026-07-15: `seed-bewerben` deleted=1; `seed-municipal-analytics` benchmark=87.5, weight=4, is_cumulative=1, cumulative_period='month'; `seed-gc-vorbereitung` present, weight=2, sort_order=17
+- [x] entries SELECT → PASSED: row `seed-municipal-analytics-2026-07-10` value=9.5 deleted=0
+- [ ] Manual: device Sync Now → GC Vorbereitung visible, Bewerben gone, municipal shows month progress 9.5/87.5 (user to confirm on iPhone/Mac)
 
 ## Phase 2 — SeedData.swift matches new reality
 
@@ -172,4 +172,4 @@ Encoding in existing `periodAnchor: Int?` (no model/schema/Worker changes): mont
 
 ## Amendments
 
-(none yet)
+**2026-07-15 — Phase 1 adjusted to live server state.** Snapshot showed heavy user customization since seed: 17 active tasks; Municipal already weight 4 (daily 4 Stunden, non-cumulative); Bewerben now weekly-cumulative 12/week; Putzen weekly-cumulative weight 5; Claude Nutzung weekly 100 weight 5 anchor Wed; DAV Studieren checkbox exists; seed-schach-lesen/-nebenprojekt/-aktuarwissenschaft already deleted (replaced by user's own tasks). July municipal entries: none (backfill 9.5 confirmed correct). User chose (AskUserQuestion): **minimal touch** — Municipal keeps weight 4 (only becomes monthly 87.5 Stunden), GC Vorbereitung added at weight 2 sort_order 17, no other weight changes (Putzen/Claude Nutzung deliberate); "demote putzen/schach-lesen" tasks dropped. Units stay German ("Stunden"). GC task confirmed as new task, not a Bewerben repurpose.
