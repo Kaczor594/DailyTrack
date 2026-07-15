@@ -65,6 +65,12 @@ struct ContentView: View {
                     Label(String(localized: "Settings"), systemImage: "gearshape")
                 }
         }
+        #if os(macOS)
+        // Let the paper surface run up behind the glass tab pill instead of
+        // the system's dark window-toolbar material.
+        .toolbarBackground(.hidden, for: .windowToolbar)
+        .background(PaperBackground())
+        #endif
     }
 }
 
