@@ -2,7 +2,7 @@
 created: 2026-07-15
 modified: [2026-07-15]
 sessions: [2026-07-15]
-commits: [bce0b18, 52eec55, 4383777, b566bd3, c2631ef, 84e4621, 5ef0af4, c148be5]
+commits: [bce0b18, 52eec55, 4383777, b566bd3, c2631ef, 84e4621, 5ef0af4, c148be5, 912f9ad]
 back_refs:
   - CLAUDE_HANDOFF.md#next-steps
   - https://claude.ai/design/p/e686602b-8427-4a34-b26d-b75aa54cb714 (Isaac Kaczor Design System — colors_and_type.css is source of truth; README there is stale blue/Inter direction)
@@ -147,21 +147,21 @@ Encoding in existing `periodAnchor: Int?` (no model/schema/Worker changes): mont
 
 ## Phase 8 — Public repo + docs
 
-- [ ] Port to `../DailyTrack-public/`: Shared/PeriodWindow.swift (missing there), Models, Sync, ViewModels, Views, widget, Theme/ + Fonts/ (+OFL — required for redistribution), pbxproj exception additions, worker src/index.ts + schema.sql
-- [ ] NEVER copy private SeedData.swift (public one sanitized) or blindly copy Localizable.xcstrings (port only new UI strings); fix README `Sources/` path issue
-- [ ] Commit + push in public working copy to its own origin only
-- [ ] Private repo: refresh CLAUDE_HANDOFF.md (new state, D1 change log, theme architecture) + CLAUDE.md Key Files (Theme.swift)
+- [x] Ported to `../DailyTrack-public/`: Shared/PeriodWindow.swift, TaskDefinition, SyncManager, Daily/History ViewModels, all Views, widget, Theme/ + Fonts/ (+2 OFL files), pbxproj exception-set patched (NOT copied wholesale — public keeps sanitized DEVELOPMENT_TEAM), worker src/index.ts + schema.sql (wrangler.toml untouched — sanitized D1 id)
+- [x] Private SeedData NOT copied (guard passed); Localizable.xcstrings verified (public keys strict subset, no personal strings) → copied whole; README `Sources/` issue was already fixed (stale handoff note) — updated tree with Theme/Fonts/PeriodWindow instead
+- [x] Committed (edea295) + pushed to public origin only (URL verified first)
+- [x] Private repo: CLAUDE_HANDOFF.md refreshed (2026-07-15 session; next steps → manual checks + Aug-1 rebalance) + CLAUDE.md (Theme Key Files, CODE_SIGNING_ALLOWED=NO tooling note)
 
 **Validation (gate):**
-- `cd ../DailyTrack-public && git remote get-url origin` → `…Kaczor594/DailyTrackApp.git`
-- `grep -c "seed-reading" ../DailyTrack-public/DailyTrack/DailyTrack/Database/SeedData.swift` → ≥1 (sanitized seed intact)
-- Public-copy `xcodebuild -scheme DailyTrack -destination 'platform=macOS' build` → `** BUILD SUCCEEDED **`
+- [x] `git remote get-url origin` → `https://github.com/Kaczor594/DailyTrackApp.git`
+- [x] `grep -c "seed-reading" .../SeedData.swift` → 1 (sanitized seed intact)
+- [x] Public-copy xcodebuild (CODE_SIGNING_ALLOWED=NO) → `** BUILD SUCCEEDED **`
 
 ## Final validation
 
-- All phase gates green
-- Fresh build to Mac + Sync Now → GC Vorbereitung present, Bewerben gone, municipal month progress 9.5/87.5 + entries added since
-- iPhone sync round-trip confirms the same; light+dark visual pass on all tabs + 3 widget sizes
+- [x] All automated phase gates green (2026-07-15)
+- [ ] Fresh build to Mac + Sync Now → GC Vorbereitung present, Bewerben gone, municipal month progress 9.5/87.5 (user)
+- [ ] iPhone sync round-trip confirms the same; light+dark visual pass on all tabs + 3 widget sizes (user)
 
 ## Notes
 
