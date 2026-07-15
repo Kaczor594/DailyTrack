@@ -11,6 +11,20 @@ struct DailyView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
+                    // Sync failure banner
+                    if let error = syncManager.lastError {
+                        SyncErrorBanner(
+                            message: error,
+                            onRetry: {
+                                Task { await syncManager.sync(context: modelContext) }
+                            },
+                            onDismiss: {
+                                syncManager.lastError = nil
+                            }
+                        )
+                        .padding(.horizontal)
+                    }
+
                     // Daily score ring
                     DailyScoreCard(
                         score: viewModel.dailyScore,
@@ -68,6 +82,10 @@ struct DailyView: View {
                 }
                 .padding(.vertical)
             }
+            .refreshable {
+                await syncManager.sync(context: modelContext)
+                viewModel.loadData(context: modelContext)
+            }
             .navigationTitle("DailyTrack")
             #if os(iOS)
             .toolbar {
@@ -92,6 +110,52 @@ struct DailyView: View {
                 viewModel.loadData(context: modelContext)
             }
         }
+    }
+}
+
+// MARK: - Sync Error Banner
+
+/// Compact dismissible banner surfacing sync failures on the primary view.
+struct SyncErrorBanner: View {
+    let message: String
+    var onRetry: () -> Void
+    var onDismiss: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.red)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(String(localized: "Sync failed"))
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                Text(message)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+
+            Spacer()
+
+            Button(String(localized: "Retry")) {
+                onRetry()
+            }
+            .font(.caption)
+            .buttonStyle(.bordered)
+
+            Button {
+                onDismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(10)
+        .background(Color.red.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 

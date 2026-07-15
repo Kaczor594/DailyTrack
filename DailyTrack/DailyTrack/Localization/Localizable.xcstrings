@@ -1,590 +1,534 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "/ %@ %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "/ %1$@ %2$@"
+  "sourceLanguage": "en",
+  "strings": {
+    "/ %@ %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "/ %1$@ %2$@"
           }
         }
       }
     },
-    "%lld" : {
-
-    },
-    "%lld %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld %2$@"
+    "%lld": {},
+    "%lld %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld %2$@"
           }
         }
       }
     },
-    "%lld%%" : {
-
-    },
-    "0" : {
-
-    },
-    "1" : {
-
-    },
-    "API URL" : {
-
-    },
-    "application" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bewerbung"
+    "%lld%%": {},
+    "0": {},
+    "1": {},
+    "API URL": {},
+    "application": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bewerbung"
           }
         }
       }
     },
-    "Average Score" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Durchschnitt"
+    "Average Score": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Durchschnitt"
           }
         }
       }
     },
-    "Best Streak" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Beste Serie"
+    "Best Streak": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beste Serie"
           }
         }
       }
     },
-    "Calendar" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kalender"
+    "Calendar": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalender"
           }
         }
       }
     },
-    "Cancel" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abbrechen"
+    "Cancel": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbrechen"
           }
         }
       }
     },
-    "Checkbox" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kontrollkästchen"
+    "Checkbox": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontrollkästchen"
           }
         }
       }
     },
-    "chore" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hausarbeit"
+    "chore": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hausarbeit"
           }
         }
       }
     },
-    "Cloud Sync" : {
-
-    },
-    "Complete" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abschließen"
+    "Cloud Sync": {},
+    "Complete": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abschließen"
           }
         }
       }
     },
-    "Configuration File" : {
-
-    },
-    "Cumulative" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kumulativ"
+    "Configuration File": {},
+    "Cumulative": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kumulativ"
           }
         }
       }
     },
-    "Cumulative (track total over time)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kumulativ (Gesamtfortschritt über Zeit)"
+    "Cumulative (track total over time)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kumulativ (Gesamtfortschritt über Zeit)"
           }
         }
       }
     },
-    "Current Streak" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aktuelle Serie"
+    "Current Streak": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuelle Serie"
           }
         }
       }
     },
-    "Daily Benchmark" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tägliches Ziel"
+    "Daily Benchmark": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tägliches Ziel"
           }
         }
       }
     },
-    "Daily Completion" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tägliche Erfüllung"
+    "Daily Completion": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tägliche Erfüllung"
           }
         }
       }
     },
-    "DailyTrack" : {
-
-    },
-    "Date" : {
-
-    },
-    "day streak" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tage Serie"
+    "DailyTrack": {},
+    "Date": {},
+    "day streak": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tage Serie"
           }
         }
       }
     },
-    "days" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tage"
+    "days": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tage"
           }
         }
       }
     },
-    "Days Tracked" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tage erfasst"
+    "Days Tracked": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tage erfasst"
           }
         }
       }
     },
-    "Done" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Erledigt"
+    "Done": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erledigt"
           }
         }
       }
     },
-    "Edit Task" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aufgabe bearbeiten"
+    "Edit Task": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufgabe bearbeiten"
           }
         }
       }
     },
-    "Enter your Cloudflare Worker URL and token to sync between devices." : {
-
-    },
-    "Export Tasks to JSON" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aufgaben als JSON exportieren"
+    "Enter your Cloudflare Worker URL and token to sync between devices.": {},
+    "Export Tasks to JSON": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufgaben als JSON exportieren"
           }
         }
       }
     },
-    "Friday" : {
-
-    },
-    "game/chapter" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spiel/Kapitel"
+    "Friday": {},
+    "game/chapter": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiel/Kapitel"
           }
         }
       }
     },
-    "Goal: %@ %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Goal: %1$@ %2$@"
+    "Goal: %@ %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Goal: %1$@ %2$@"
           }
         }
       }
     },
-    "Higher weight means this task counts more toward your daily score." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Höhere Gewichtung bedeutet, dass diese Aufgabe mehr zum Tageswert beiträgt."
+    "Higher weight means this task counts more toward your daily score.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höhere Gewichtung bedeutet, dass diese Aufgabe mehr zum Tageswert beiträgt."
           }
         }
       }
     },
-    "History" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verlauf"
+    "History": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verlauf"
           }
         }
       }
     },
-    "hour" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stunde"
+    "hour": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stunde"
           }
         }
       }
     },
-    "hours" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stunden"
+    "hours": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stunden"
           }
         }
       }
     },
-    "Import Tasks from JSON" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aufgaben aus JSON importieren"
+    "Import Tasks from JSON": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufgaben aus JSON importieren"
           }
         }
       }
     },
-    "Last sync" : {
-
-    },
-    "Locale Default" : {
-
-    },
-    "Monday" : {
-
-    },
-    "Month" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Monat"
+    "Last sync": {},
+    "Locale Default": {},
+    "Monday": {},
+    "Month": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monat"
           }
         }
       }
     },
-    "Monthly" : {
-
-    },
-    "Monthly Target" : {
-
-    },
-    "New Task" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neue Aufgabe"
+    "Monthly": {},
+    "Monthly Target": {},
+    "New Task": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Aufgabe"
           }
         }
       }
     },
-    "No Data Yet" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Noch keine Daten"
+    "No Data Yet": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Daten"
           }
         }
       }
     },
-    "None (lifetime)" : {
-
-    },
-    "Not done" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nicht erledigt"
+    "None (lifetime)": {},
+    "Not done": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht erledigt"
           }
         }
       }
     },
-    "Period" : {
-
-    },
-    "Quarter" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quartal"
+    "Period": {},
+    "Quarter": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quartal"
           }
         }
       }
     },
-    "Saturday" : {
-
-    },
-    "Save" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Speichern"
+    "Saturday": {},
+    "Save": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speichern"
           }
         }
       }
     },
-    "Score" : {
-
-    },
-    "Scoring" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bewertung"
+    "Score": {},
+    "Scoring": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bewertung"
           }
         }
       }
     },
-    "Settings" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einstellungen"
+    "Settings": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen"
           }
         }
       }
     },
-    "Simple Checkbox" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einfaches Kontrollkästchen"
+    "Simple Checkbox": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einfaches Kontrollkästchen"
           }
         }
       }
     },
-    "Start tracking tasks to see trends here." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Beginnen Sie mit der Aufgabenverfolgung, um hier Trends zu sehen."
+    "Start tracking tasks to see trends here.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beginnen Sie mit der Aufgabenverfolgung, um hier Trends zu sehen."
           }
         }
       }
     },
-    "Sunday" : {
-
-    },
-    "Sync Now" : {
-
-    },
-    "Sync Token" : {
-
-    },
-    "Task Breakdown — %@" : {
-
-    },
-    "Task Details" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aufgabendetails"
+    "Sunday": {},
+    "Sync Now": {},
+    "Sync Token": {},
+    "Task Breakdown — %@": {},
+    "Task Details": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufgabendetails"
           }
         }
       }
     },
-    "Task Name" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aufgabenname"
+    "Task Name": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufgabenname"
           }
         }
       }
     },
-    "Tasks" : {
-
-    },
-    "Tasks are saved at: %@" : {
-
-    },
-    "this month" : {
-
-    },
-    "this week" : {
-
-    },
-    "this year" : {
-
-    },
-    "Thursday" : {
-
-    },
-    "Today" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Heute"
+    "Tasks": {},
+    "Tasks are saved at: %@": {},
+    "this month": {},
+    "this week": {},
+    "this year": {},
+    "Thursday": {},
+    "Today": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute"
           }
         }
       }
     },
-    "Tracking" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Erfassung"
+    "Tracking": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erfassung"
           }
         }
       }
     },
-    "Tuesday" : {
-
-    },
-    "Unit (e.g., hours, pages)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einheit (z.B. Stunden, Seiten)"
+    "Tuesday": {},
+    "Unit (e.g., hours, pages)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einheit (z.B. Stunden, Seiten)"
           }
         }
       }
     },
-    "Wednesday" : {
-
-    },
-    "Week" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Woche"
+    "Wednesday": {},
+    "Week": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Woche"
           }
         }
       }
     },
-    "Week Starts On" : {
-
-    },
-    "Weekly" : {
-
-    },
-    "Weekly Target" : {
-
-    },
-    "Weight" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gewichtung"
+    "Week Starts On": {},
+    "Weekly": {},
+    "Weekly Target": {},
+    "Weight": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gewichtung"
           }
         }
       }
     },
-    "Weight: %@" : {
-
-    },
-    "workout" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trainingsset"
+    "Weight: %@": {},
+    "workout": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsset"
           }
         }
       }
     },
-    "Year" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Jahr"
+    "Year": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jahr"
           }
         }
       }
     },
-    "Yearly" : {
-
+    "Yearly": {},
+    "Yearly Target": {},
+    "Sync failed": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sync fehlgeschlagen"
+          }
+        }
+      }
     },
-    "Yearly Target" : {
-
+    "Retry": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut versuchen"
+          }
+        }
+      }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

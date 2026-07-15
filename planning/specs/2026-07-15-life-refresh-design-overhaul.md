@@ -2,7 +2,7 @@
 created: 2026-07-15
 modified: [2026-07-15]
 sessions: [2026-07-15]
-commits: [bce0b18, 52eec55]
+commits: [bce0b18, 52eec55, 4383777]
 back_refs:
   - CLAUDE_HANDOFF.md#next-steps
   - https://claude.ai/design/p/e686602b-8427-4a34-b26d-b75aa54cb714 (Isaac Kaczor Design System — colors_and_type.css is source of truth; README there is stale blue/Inter direction)
@@ -88,13 +88,13 @@ Final weights: Municipal 4.0 (unchanged, top work priority), GC Vorbereitung 2.0
 
 ## Phase 3 — Sync error banner + pull-to-refresh
 
-- [ ] Dismissible banner at top of DailyView VStack when `syncManager.lastError != nil`: warning icon, error caption, Retry button (`Task { await syncManager.sync(context:) }`), xmark dismiss (`lastError = nil`)
-- [ ] `.refreshable { await syncManager.sync(context: modelContext); viewModel.loadData(context: modelContext) }` on DailyView ScrollView
-- [ ] New strings ("Sync failed", "Retry") + DE translations in Localizable.xcstrings; keep existing Settings error caption
+- [x] Dismissible banner (`SyncErrorBanner` in DailyView.swift) at top of DailyView VStack when `syncManager.lastError != nil`: warning icon, error caption, Retry button, xmark dismiss
+- [x] `.refreshable { await syncManager.sync(context: modelContext); viewModel.loadData(context: modelContext) }` on DailyView ScrollView
+- [x] New strings ("Sync failed" → "Sync fehlgeschlagen", "Retry" → "Erneut versuchen") in Localizable.xcstrings; Settings error caption kept
 
 **Validation (gate):**
-- Both xcodebuild commands (as Phase 2) → `** BUILD SUCCEEDED **`
-- Manual: garbage API URL → pull-to-refresh → banner appears; dismiss works; correct URL + Retry → banner clears
+- [x] Both xcodebuild commands (as Phase 2) → `** BUILD SUCCEEDED **` (2026-07-15)
+- [ ] Manual: garbage API URL → pull-to-refresh → banner appears; dismiss works; correct URL + Retry → banner clears (user to confirm)
 
 ## Phase 4 — Theme foundation (plumbing only)
 
