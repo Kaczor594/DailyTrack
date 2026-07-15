@@ -1,16 +1,6 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "/ %@ %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "/ %1$@ %2$@"
-          }
-        }
-      }
-    },
     "%lld": {},
     "%lld %@": {
       "localizations": {
@@ -23,19 +13,29 @@
       }
     },
     "%lld%%": {},
-    "0": {},
-    "1": {},
-    "API URL": {},
-    "application": {
+    "/ %@ %@": {
       "localizations": {
-        "de": {
+        "en": {
           "stringUnit": {
-            "state": "translated",
-            "value": "Bewerbung"
+            "state": "new",
+            "value": "/ %1$@ %2$@"
           }
         }
       }
     },
+    "0": {},
+    "1": {},
+    "1st (Default)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. (Standard)"
+          }
+        }
+      }
+    },
+    "API URL": {},
     "Average Score": {
       "localizations": {
         "de": {
@@ -86,16 +86,6 @@
         }
       }
     },
-    "chore": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hausarbeit"
-          }
-        }
-      }
-    },
     "Cloud Sync": {},
     "Complete": {
       "localizations": {
@@ -103,6 +93,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Abschließen"
+          }
+        }
+      }
+    },
+    "Completed": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erledigt"
           }
         }
       }
@@ -160,26 +160,6 @@
     },
     "DailyTrack": {},
     "Date": {},
-    "day streak": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tage Serie"
-          }
-        }
-      }
-    },
-    "days": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tage"
-          }
-        }
-      }
-    },
     "Days Tracked": {
       "localizations": {
         "de": {
@@ -222,16 +202,6 @@
       }
     },
     "Friday": {},
-    "game/chapter": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spiel/Kapitel"
-          }
-        }
-      }
-    },
     "Goal: %@ %@": {
       "localizations": {
         "en": {
@@ -262,32 +232,32 @@
         }
       }
     },
-    "hour": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stunde"
-          }
-        }
-      }
-    },
-    "hours": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stunden"
-          }
-        }
-      }
-    },
     "Import Tasks from JSON": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Aufgaben aus JSON importieren"
+          }
+        }
+      }
+    },
+    "January 1 (Default)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Januar (Standard)"
+          }
+        }
+      }
+    },
+    "Last 5 days": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzte 5 Tage"
           }
         }
       }
@@ -301,6 +271,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Monat"
+          }
+        }
+      }
+    },
+    "Month Starts On": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monat beginnt am"
           }
         }
       }
@@ -327,6 +307,26 @@
         }
       }
     },
+    "No history yet": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch kein Verlauf"
+          }
+        }
+      }
+    },
+    "No tasks for today": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Aufgaben für heute"
+          }
+        }
+      }
+    },
     "None (lifetime)": {},
     "Not done": {
       "localizations": {
@@ -338,6 +338,16 @@
         }
       }
     },
+    "On Day": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Am Tag"
+          }
+        }
+      }
+    },
     "Period": {},
     "Quarter": {
       "localizations": {
@@ -345,6 +355,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Quartal"
+          }
+        }
+      }
+    },
+    "Retry": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut versuchen"
           }
         }
       }
@@ -401,9 +421,29 @@
         }
       }
     },
+    "Streak": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serie"
+          }
+        }
+      }
+    },
     "Sunday": {},
     "Sync Now": {},
     "Sync Token": {},
+    "Sync failed": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sync fehlgeschlagen"
+          }
+        }
+      }
+    },
     "Task Breakdown — %@": {},
     "Task Details": {
       "localizations": {
@@ -427,9 +467,6 @@
     },
     "Tasks": {},
     "Tasks are saved at: %@": {},
-    "this month": {},
-    "this week": {},
-    "this year": {},
     "Thursday": {},
     "Today": {
       "localizations": {
@@ -447,6 +484,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Erfassung"
+          }
+        }
+      }
+    },
+    "Trend": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trend"
           }
         }
       }
@@ -487,64 +534,12 @@
       }
     },
     "Weight: %@": {},
-    "workout": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trainingsset"
-          }
-        }
-      }
-    },
     "Year": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Jahr"
-          }
-        }
-      }
-    },
-    "Yearly": {},
-    "Yearly Target": {},
-    "Sync failed": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sync fehlgeschlagen"
-          }
-        }
-      }
-    },
-    "Retry": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erneut versuchen"
-          }
-        }
-      }
-    },
-    "Month Starts On": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Monat beginnt am"
-          }
-        }
-      }
-    },
-    "1st (Default)": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1. (Standard)"
           }
         }
       }
@@ -559,22 +554,88 @@
         }
       }
     },
-    "January 1 (Default)": {
+    "Yearly": {},
+    "Yearly Target": {},
+    "application": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "1. Januar (Standard)"
+            "value": "Bewerbung"
           }
         }
       }
     },
-    "On Day": {
+    "chore": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Am Tag"
+            "value": "Hausarbeit"
+          }
+        }
+      }
+    },
+    "day streak": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tage Serie"
+          }
+        }
+      }
+    },
+    "days": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tage"
+          }
+        }
+      }
+    },
+    "game/chapter": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiel/Kapitel"
+          }
+        }
+      }
+    },
+    "hour": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stunde"
+          }
+        }
+      }
+    },
+    "hours": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stunden"
+          }
+        }
+      }
+    },
+    "this month": {},
+    "this week": {},
+    "this year": {},
+    "workout": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsset"
           }
         }
       }

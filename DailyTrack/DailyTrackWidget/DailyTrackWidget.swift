@@ -283,47 +283,55 @@ struct DailyTrackTimelineProvider: TimelineProvider {
 
 }
 
-// MARK: - Score Ring View
+// MARK: - Shared widget pieces
 
-struct ScoreRingView: View {
-    let score: Double
-    let size: CGFloat
-    let lineWidth: CGFloat
-
+/// Grain-textured paper background for all widget families.
+struct WidgetPaperBackground: View {
     var body: some View {
         ZStack {
-            Circle()
-                .stroke(Theme.divider, lineWidth: lineWidth)
-
-            Circle()
-                .trim(from: 0, to: min(score, 1.0))
-                .stroke(
-                    Theme.scoreColor(score),
-                    style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
-                )
-                .rotationEffect(.degrees(-90))
-                .animation(.easeInOut(duration: 0.5), value: score)
-
-            Text("\(Int(score * 100))%")
-                .font(Theme.displaySemiBold(size * 0.25))
-                .foregroundStyle(Theme.scoreColor(score))
+            Theme.background
+            Image("GrainTexture")
+                .resizable(resizingMode: .tile)
+                .opacity(0.35)
         }
-        .frame(width: size, height: size)
     }
 }
 
-// MARK: - Streak View
+/// Score block: eyebrow, big tabular score, meter.
+struct ScoreBlock: View {
+    let score: Double
+    var valueSize: CGFloat = 32
 
-struct StreakView: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Eyebrow(String(localized: "Today"))
+
+            HStack(alignment: .firstTextBaseline, spacing: 1) {
+                Text("\(Int(score * 100))")
+                    .font(Theme.monoMedium(valueSize))
+                    .foregroundStyle(Theme.scoreColor(score))
+                Text("%")
+                    .font(Theme.mono(valueSize * 0.45))
+                    .foregroundStyle(Theme.inkSecondary)
+            }
+
+            MeterBar(ratio: score, height: 3)
+        }
+    }
+}
+
+/// Mono streak stamp, quiet when zero.
+struct StreakStamp: View {
     let streak: Int
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 3) {
             Image(systemName: "flame.fill")
+                .font(.system(size: 9))
                 .foregroundStyle(streak > 0 ? Theme.terra : Theme.inkTertiary)
             Text("\(streak)")
-                .font(Theme.monoMedium(12))
-                .foregroundStyle(Theme.ink)
+                .font(Theme.monoMedium(11))
+                .foregroundStyle(streak > 0 ? Theme.ink : Theme.inkTertiary)
         }
     }
 }
@@ -338,28 +346,26 @@ struct TaskRowView: View {
         HStack(spacing: 8) {
             if task.isCheckbox {
                 Button(intent: ToggleTaskIntent(taskId: task.id)) {
-                    Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                        .foregroundStyle(task.isCompleted ? Theme.positive : Theme.inkTertiary)
-                        .font(.system(size: compact ? 16 : 20))
+                    SquareCheckGlyph(isOn: task.isCompleted, size: compact ? 13 : 15)
                 }
                 .buttonStyle(.plain)
             } else {
-                ProgressCircle(ratio: task.ratio, size: compact ? 16 : 20)
+                SquareGauge(ratio: task.ratio, size: compact ? 13 : 15)
             }
 
             Text(task.name)
-                .font(Theme.bodyMedium(compact ? 12 : 14))
+                .font(Theme.body(compact ? 12 : 13))
                 .lineLimit(1)
                 .foregroundStyle(Theme.ink)
 
-            Spacer()
+            Spacer(minLength: 4)
 
-            if !task.isCheckbox && !compact {
+            if !task.isCheckbox {
                 // Period tasks show progress against the derived daily target,
                 // not the full period benchmark (e.g. "1.5/2.8", not "0/87").
                 let target = task.dailyTarget ?? task.benchmark
                 Text("\(formatShort(task.value))/\(formatShort(target))")
-                    .font(Theme.mono(11))
+                    .font(Theme.mono(compact ? 10 : 11))
                     .foregroundStyle(Theme.inkSecondary)
             }
         }
@@ -371,35 +377,41 @@ struct TaskRowView: View {
     }
 }
 
-struct ProgressCircle: View {
-    let ratio: Double
-    let size: CGFloat
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(Theme.divider, lineWidth: 2)
-            Circle()
-                .trim(from: 0, to: min(ratio, 1.0))
-                .stroke(Theme.scoreColor(ratio), style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-        }
-        .frame(width: size, height: size)
-    }
-}
-
 // MARK: - Small Widget View
 
 struct SmallWidgetView: View {
     let entry: DailyTrackEntry
 
-    var body: some View {
-        VStack(spacing: 8) {
-            ScoreRingView(score: entry.score, size: 80, lineWidth: 8)
+    private var completed: Int {
+        entry.tasks.filter { $0.ratio >= 1.0 }.count
+    }
 
-            StreakView(streak: entry.streak)
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top) {
+                ScoreBlock(score: entry.score, valueSize: 34)
+                Spacer()
+            }
+
+            Spacer(minLength: 8)
+
+            Hairline()
+
+            HStack {
+                Text("\(completed)/\(entry.tasks.count)")
+                    .font(Theme.monoMedium(11))
+                    .foregroundStyle(Theme.ink)
+                + Text(" \(String(localized: "Completed"))")
+                    .font(Theme.mono(9))
+                    .foregroundStyle(Theme.inkTertiary)
+
+                Spacer()
+
+                StreakStamp(streak: entry.streak)
+            }
+            .padding(.top, 8)
         }
-        .containerBackground(Theme.background, for: .widget)
+        .containerBackground(for: .widget) { WidgetPaperBackground() }
     }
 }
 
@@ -409,28 +421,30 @@ struct MediumWidgetView: View {
     let entry: DailyTrackEntry
 
     var body: some View {
-        HStack(spacing: 16) {
-            VStack(spacing: 4) {
-                ScoreRingView(score: entry.score, size: 70, lineWidth: 6)
-                StreakView(streak: entry.streak)
+        HStack(spacing: 12) {
+            VStack(alignment: .leading) {
+                ScoreBlock(score: entry.score, valueSize: 30)
+                Spacer(minLength: 4)
+                StreakStamp(streak: entry.streak)
             }
-            .frame(width: 90)
+            .frame(width: 96, alignment: .leading)
 
-            VStack(alignment: .leading, spacing: 6) {
+            Hairline(vertical: true)
+
+            VStack(alignment: .leading, spacing: 5) {
                 ForEach(entry.tasks.prefix(4)) { task in
                     TaskRowView(task: task, compact: true)
                 }
 
                 if entry.tasks.isEmpty {
-                    Text("No tasks for today")
+                    Text(String(localized: "No tasks for today"))
                         .font(Theme.body(11))
                         .foregroundStyle(Theme.inkSecondary)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, 4)
-        .containerBackground(Theme.background, for: .widget)
+        .containerBackground(for: .widget) { WidgetPaperBackground() }
     }
 }
 
@@ -441,24 +455,23 @@ struct DayScoreBar: View {
     let maxHeight: CGFloat
 
     var body: some View {
-        VStack(spacing: 4) {
-            Text("\(Int(day.score * 100))%")
-                .font(Theme.mono(10))
+        VStack(spacing: 3) {
+            Text("\(Int(day.score * 100))")
+                .font(Theme.mono(9))
                 .foregroundStyle(Theme.inkSecondary)
 
             ZStack(alignment: .bottom) {
-                RoundedRectangle(cornerRadius: 3)
+                RoundedRectangle(cornerRadius: 1)
                     .fill(Theme.panel)
-                    .frame(width: 28, height: maxHeight)
 
-                RoundedRectangle(cornerRadius: 3)
+                Rectangle()
                     .fill(Theme.scoreColor(day.score))
-                    .frame(width: 28, height: max(2, maxHeight * min(day.score, 1.0)))
+                    .frame(height: max(2, maxHeight * min(day.score, 1.0)))
             }
+            .clipShape(RoundedRectangle(cornerRadius: 1))
+            .frame(height: maxHeight)
 
-            Text(day.label)
-                .font(Theme.bodyMedium(11))
-                .foregroundStyle(Theme.inkSecondary)
+            Eyebrow(day.label, size: 8)
         }
     }
 }
@@ -469,43 +482,50 @@ struct LargeWidgetView: View {
     let entry: DailyTrackEntry
 
     var body: some View {
-        VStack(spacing: 16) {
-            // Today's progress section
-            VStack(spacing: 8) {
-                Text("Today's Progress")
-                    .font(Theme.body(12))
-                    .foregroundStyle(Theme.inkSecondary)
-
-                ScoreRingView(score: entry.score, size: 100, lineWidth: 9)
-
-                StreakView(streak: entry.streak)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                ScoreBlock(score: entry.score, valueSize: 34)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                StreakStamp(streak: entry.streak)
             }
 
-            Divider()
+            Hairline()
 
-            // Last 5 days section
-            VStack(spacing: 8) {
-                Text("Last 5 Days")
-                    .font(Theme.body(12))
-                    .foregroundStyle(Theme.inkSecondary)
+            // Task ledger
+            VStack(alignment: .leading, spacing: 7) {
+                ForEach(entry.tasks.prefix(6)) { task in
+                    TaskRowView(task: task, compact: false)
+                }
+
+                if entry.tasks.isEmpty {
+                    Text(String(localized: "No tasks for today"))
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.inkSecondary)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+            Hairline()
+
+            // Last 5 days
+            VStack(alignment: .leading, spacing: 6) {
+                Eyebrow(String(localized: "Last 5 days"), size: 9)
 
                 if entry.recentScores.isEmpty {
-                    Text("No history yet")
+                    Text(String(localized: "No history yet"))
                         .font(Theme.body(11))
                         .foregroundStyle(Theme.inkSecondary)
-                        .frame(maxHeight: .infinity)
                 } else {
-                    HStack(spacing: 12) {
+                    HStack(alignment: .bottom, spacing: 10) {
                         ForEach(entry.recentScores) { day in
-                            DayScoreBar(day: day, maxHeight: 80)
+                            DayScoreBar(day: day, maxHeight: 36)
+                                .frame(maxWidth: .infinity)
                         }
                     }
                 }
             }
-
-            Spacer(minLength: 0)
         }
-        .containerBackground(Theme.background, for: .widget)
+        .containerBackground(for: .widget) { WidgetPaperBackground() }
     }
 }
 

@@ -75,7 +75,7 @@ enum Theme {
 
     // MARK: - Radii (small, architectural — no pillowy corners)
 
-    static let radiusCard: CGFloat = 8
+    static let radiusCard: CGFloat = 6
     static let radiusControl: CGFloat = 4
     static let radiusBar: CGFloat = 2
 

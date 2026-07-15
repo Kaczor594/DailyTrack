@@ -33,8 +33,7 @@ struct SettingsView: View {
                         syncManager.debouncedSync(context: modelContext)
                     }
                 } header: {
-                    Text("Tasks")
-                        .font(Theme.bodyMedium(12))
+                    Eyebrow(String(localized: "Tasks"))
                 }
                 .listRowBackground(Theme.surface)
 
@@ -90,8 +89,7 @@ struct SettingsView: View {
                             .foregroundStyle(Theme.negative)
                     }
                 } header: {
-                    Text(String(localized: "Cloud Sync"))
-                        .font(Theme.bodyMedium(12))
+                    Eyebrow(String(localized: "Cloud Sync"))
                 } footer: {
                     Text(String(localized: "Enter your Cloudflare Worker URL and token to sync between devices."))
                         .font(.caption2)
@@ -111,8 +109,7 @@ struct SettingsView: View {
                         Label(String(localized: "Import Tasks from JSON"), systemImage: "square.and.arrow.down")
                     }
                 } header: {
-                    Text("Configuration File")
-                        .font(Theme.bodyMedium(12))
+                    Eyebrow(String(localized: "Configuration File"))
                 } footer: {
                     Text(String(localized: "Tasks are saved at: \(viewModel.configFilePath().path)"))
                         .font(.caption2)
@@ -120,7 +117,7 @@ struct SettingsView: View {
                 .listRowBackground(Theme.surface)
             }
             .scrollContentBackground(.hidden)
-            .background(Theme.background)
+            .background(PaperBackground())
             .navigationTitle(String(localized: "Settings"))
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
