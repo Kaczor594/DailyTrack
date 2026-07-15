@@ -528,6 +528,56 @@
           }
         }
       }
+    },
+    "Month Starts On": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monat beginnt am"
+          }
+        }
+      }
+    },
+    "1st (Default)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. (Standard)"
+          }
+        }
+      }
+    },
+    "Year Starts In": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jahr beginnt im"
+          }
+        }
+      }
+    },
+    "January 1 (Default)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Januar (Standard)"
+          }
+        }
+      }
+    },
+    "On Day": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Am Tag"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

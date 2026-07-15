@@ -5,9 +5,14 @@ import Foundation
 /// non-cumulative tasks or tasks whose `cumulativePeriod` is nil/"none".
 ///
 /// Week/month/year boundaries follow `Calendar.current` (locale-aware) unless
-/// `task.periodAnchor` overrides them. For weekly tasks with an anchor
-/// (1=Sunday..7=Saturday per `Calendar.weekday`), the window is a 7-day span
-/// starting on the most recent anchor weekday ≤ `date`.
+/// `task.periodAnchor` overrides them:
+/// - week: anchor is a weekday (1=Sunday..7=Saturday per `Calendar.weekday`);
+///   the window is a 7-day span starting on the most recent anchor weekday ≤ `date`.
+/// - month: anchor is a day-of-month (1...31, UI caps at 28); the window starts on
+///   the most recent occurrence of that day ≤ `date` (clamped to short months).
+/// - year: anchor encodes month*100+day (e.g. 801 = Aug 1); the window starts on
+///   the most recent occurrence of that month+day ≤ `date`.
+/// Invalid anchors fall back to the locale-default boundary.
 func periodWindow(for task: TaskDefinition, on date: Date) -> (startDateStr: String, endDateStr: String, periodDays: Int)? {
     guard let period = task.cumulativePeriod else { return nil }
     let calendar = Calendar.current
@@ -22,6 +27,51 @@ func periodWindow(for task: TaskDefinition, on date: Date) -> (startDateStr: Str
             startDateStr: periodWindowDateFormatter.string(from: start),
             endDateStr: periodWindowDateFormatter.string(from: end),
             periodDays: 7
+        )
+    }
+
+    if period == "month", let anchor = task.periodAnchor, (1...31).contains(anchor) {
+        let startOfDay = calendar.startOfDay(for: date)
+        let comps = calendar.dateComponents([.year, .month], from: startOfDay)
+        guard var start = clampedDate(year: comps.year!, month: comps.month!, day: anchor, calendar: calendar) else { return nil }
+        if start > startOfDay {
+            // Anchor day hasn't occurred yet this month — window began last month.
+            guard let prevRef = calendar.date(byAdding: .month, value: -1, to: start) else { return nil }
+            let p = calendar.dateComponents([.year, .month], from: prevRef)
+            guard let s = clampedDate(year: p.year!, month: p.month!, day: anchor, calendar: calendar) else { return nil }
+            start = s
+        }
+        guard let nextRef = calendar.date(byAdding: .month, value: 1, to: start) else { return nil }
+        let n = calendar.dateComponents([.year, .month], from: nextRef)
+        guard let nextStart = clampedDate(year: n.year!, month: n.month!, day: anchor, calendar: calendar),
+              let end = calendar.date(byAdding: .day, value: -1, to: nextStart) else { return nil }
+        let days = calendar.dateComponents([.day], from: start, to: nextStart).day ?? 30
+        return (
+            startDateStr: periodWindowDateFormatter.string(from: start),
+            endDateStr: periodWindowDateFormatter.string(from: end),
+            periodDays: days
+        )
+    }
+
+    if period == "year", let anchor = task.periodAnchor, (1...12).contains(anchor / 100), (1...31).contains(anchor % 100) {
+        let month = anchor / 100
+        let day = anchor % 100
+        let startOfDay = calendar.startOfDay(for: date)
+        let year = calendar.component(.year, from: startOfDay)
+        guard var start = clampedDate(year: year, month: month, day: day, calendar: calendar) else { return nil }
+        if start > startOfDay {
+            // Anchor date hasn't occurred yet this year — window began last year.
+            guard let s = clampedDate(year: year - 1, month: month, day: day, calendar: calendar) else { return nil }
+            start = s
+        }
+        let startYear = calendar.component(.year, from: start)
+        guard let nextStart = clampedDate(year: startYear + 1, month: month, day: day, calendar: calendar),
+              let end = calendar.date(byAdding: .day, value: -1, to: nextStart) else { return nil }
+        let days = calendar.dateComponents([.day], from: start, to: nextStart).day ?? 365
+        return (
+            startDateStr: periodWindowDateFormatter.string(from: start),
+            endDateStr: periodWindowDateFormatter.string(from: end),
+            periodDays: days
         )
     }
 
@@ -40,6 +90,16 @@ func periodWindow(for task: TaskDefinition, on date: Date) -> (startDateStr: Str
         endDateStr: periodWindowDateFormatter.string(from: endDate),
         periodDays: days
     )
+}
+
+/// Date at the given year/month with `day` clamped to the month's actual length
+/// (so an anchor of 31 resolves to Feb 28/29, Apr 30, etc.).
+private func clampedDate(year: Int, month: Int, day: Int, calendar: Calendar) -> Date? {
+    var comps = DateComponents(year: year, month: month, day: 1)
+    guard let firstOfMonth = calendar.date(from: comps),
+          let range = calendar.range(of: .day, in: .month, for: firstOfMonth) else { return nil }
+    comps.day = min(day, range.count)
+    return calendar.date(from: comps)
 }
 
 private let periodWindowDateFormatter: DateFormatter = {

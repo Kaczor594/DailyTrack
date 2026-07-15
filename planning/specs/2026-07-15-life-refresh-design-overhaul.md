@@ -2,7 +2,7 @@
 created: 2026-07-15
 modified: [2026-07-15]
 sessions: [2026-07-15]
-commits: [bce0b18, 52eec55, 4383777, b566bd3, c2631ef, 84e4621, 5ef0af4]
+commits: [bce0b18, 52eec55, 4383777, b566bd3, c2631ef, 84e4621, 5ef0af4, c148be5]
 back_refs:
   - CLAUDE_HANDOFF.md#next-steps
   - https://claude.ai/design/p/e686602b-8427-4a34-b26d-b75aa54cb714 (Isaac Kaczor Design System — colors_and_type.css is source of truth; README there is stale blue/Inter direction)
@@ -136,14 +136,14 @@ Final weights: Municipal 4.0 (unchanged, top work priority), GC Vorbereitung 2.0
 
 Encoding in existing `periodAnchor: Int?` (no model/schema/Worker changes): month → day-of-month 1–28 (nil = 1st); year → `month*100+day` (801 = Aug 1 GC work-year; nil = Jan 1).
 
-- [ ] PeriodWindow.swift: anchored month branch (most recent anchor-day ≤ date, clamp to month length) + year branch (mm/dd decode, validate, previous-year fallback); widget inherits (shared file)
-- [ ] TaskEditorSheet: "Month starts on" picker (nil default + 2–28); "Year starts in" (Jan–Dec) + "On day" (1–28) pickers with nil default; extend anchor-clear-on-period-change logic; `nil as Int?` Picker-tag gotcha
-- [ ] New strings + DE translations
+- [x] PeriodWindow.swift: anchored month branch (most recent anchor-day ≤ date, clamped via `clampedDate`) + year branch (mm*100+dd decode, validated, previous-year fallback); invalid anchors fall back to locale default; widget inherits (shared file)
+- [x] TaskEditorSheet: "Month Starts On" picker (nil default + 2–28); "Year Starts In" (Jan–Dec, nil = Jan 1 default) + "On Day" (1–28); anchors reset on any period change via onChange; year anchor decomposed into month/day @State
+- [x] New strings + DE translations (Month Starts On, 1st (Default), Year Starts In, January 1 (Default), On Day)
 
 **Validation (gate):**
-- Both xcodebuild commands → `** BUILD SUCCEEDED **`
-- Manual: monthly anchor 15 on a July date ≥15 → window Jul 15–Aug 14, derived daily target updates; yearly 801 → Aug 1–Jul 31 window
-- `npx wrangler d1 execute dailytrack-sync --remote --json --command "SELECT id, cumulative_period, period_anchor FROM tasks WHERE period_anchor IS NOT NULL"` → test task's anchor round-trips
+- [x] Both xcodebuild commands → `** BUILD SUCCEEDED **` (2026-07-15)
+- [x] Standalone logic test (swift script, 9 cases): month a15 before/after, a31 Feb-clamp, year 801 both sides, defaults, weekly regression, invalid-anchor fallback → all PASS
+- [ ] Manual on-device: set a monthly/yearly anchor in the editor, sync, `wrangler d1` SELECT shows the anchor round-trip (user check)
 
 ## Phase 8 — Public repo + docs
 

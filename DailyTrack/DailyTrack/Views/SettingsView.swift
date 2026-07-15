@@ -254,8 +254,13 @@ struct TaskEditorSheet: View {
     @State private var weight: String = "1"
     @State private var isCumulative: Bool = false
     @State private var cumulativePeriod: String = "none"
-    /// nil means "locale default"; 1=Sunday..7=Saturday matches `Calendar.weekday`.
+    /// Weekly: nil = locale default, 1=Sunday..7=Saturday (`Calendar.weekday`).
+    /// Monthly: nil = 1st of month, otherwise day-of-month 2...28.
     @State private var periodAnchor: Int? = nil
+    /// Yearly anchor decomposed for the editor; nil month = Jan 1 default.
+    /// Persisted as `month * 100 + day` in `TaskDefinition.periodAnchor`.
+    @State private var yearAnchorMonth: Int? = nil
+    @State private var yearAnchorDay: Int = 1
     @State private var isCheckbox: Bool = false
 
     var isEditing: Bool { task != nil }
@@ -301,6 +306,12 @@ struct TaskEditorSheet: View {
                             Text(String(localized: "Monthly")).tag("month")
                             Text(String(localized: "Yearly")).tag("year")
                         }
+                        .onChange(of: cumulativePeriod) { _, _ in
+                            // Anchors encode differently per period — never carry over.
+                            periodAnchor = nil
+                            yearAnchorMonth = nil
+                            yearAnchorDay = 1
+                        }
 
                         if cumulativePeriod == "week" {
                             Picker(String(localized: "Week Starts On"), selection: $periodAnchor) {
@@ -312,6 +323,32 @@ struct TaskEditorSheet: View {
                                 Text(String(localized: "Thursday")).tag(5 as Int?)
                                 Text(String(localized: "Friday")).tag(6 as Int?)
                                 Text(String(localized: "Saturday")).tag(7 as Int?)
+                            }
+                        }
+
+                        if cumulativePeriod == "month" {
+                            Picker(String(localized: "Month Starts On"), selection: $periodAnchor) {
+                                Text(String(localized: "1st (Default)")).tag(nil as Int?)
+                                ForEach(2...28, id: \.self) { day in
+                                    Text("\(day)").tag(day as Int?)
+                                }
+                            }
+                        }
+
+                        if cumulativePeriod == "year" {
+                            Picker(String(localized: "Year Starts In"), selection: $yearAnchorMonth) {
+                                Text(String(localized: "January 1 (Default)")).tag(nil as Int?)
+                                ForEach(1...12, id: \.self) { month in
+                                    Text(monthName(month)).tag(month as Int?)
+                                }
+                            }
+
+                            if yearAnchorMonth != nil {
+                                Picker(String(localized: "On Day"), selection: $yearAnchorDay) {
+                                    ForEach(1...28, id: \.self) { day in
+                                        Text("\(day)").tag(day)
+                                    }
+                                }
                             }
                         }
                     }
@@ -361,11 +398,26 @@ struct TaskEditorSheet: View {
                     weight = String(t.weight)
                     isCumulative = t.isCumulative
                     cumulativePeriod = t.cumulativePeriod ?? "none"
-                    periodAnchor = t.periodAnchor
+                    switch t.cumulativePeriod {
+                    case "week", "month":
+                        periodAnchor = t.periodAnchor
+                    case "year":
+                        if let a = t.periodAnchor, (1...12).contains(a / 100) {
+                            yearAnchorMonth = a / 100
+                            yearAnchorDay = max(1, min(28, a % 100))
+                        }
+                    default:
+                        break
+                    }
                     isCheckbox = t.isCheckbox
                 }
             }
         }
+    }
+
+    private func monthName(_ month: Int) -> String {
+        let formatter = DateFormatter()
+        return formatter.monthSymbols[month - 1]
     }
 
     private var benchmarkLabel: String {
@@ -381,9 +433,21 @@ struct TaskEditorSheet: View {
         let benchVal = Double(benchmark.replacingOccurrences(of: ",", with: ".")) ?? 1.0
         let weightVal = Double(weight.replacingOccurrences(of: ",", with: ".")) ?? 1.0
 
-        // Anchor only meaningful for weekly tasks; clear it otherwise so stale
-        // values from a previous period selection don't linger.
-        let anchorToSave = (isCumulative && cumulativePeriod == "week") ? periodAnchor : nil
+        // Anchor encoding depends on the period; cleared for non-period tasks so
+        // stale values from a previous period selection don't linger.
+        let anchorToSave: Int?
+        if isCumulative {
+            switch cumulativePeriod {
+            case "week", "month":
+                anchorToSave = periodAnchor
+            case "year":
+                anchorToSave = yearAnchorMonth.map { $0 * 100 + yearAnchorDay }
+            default:
+                anchorToSave = nil
+            }
+        } else {
+            anchorToSave = nil
+        }
 
         if let existing = task {
             // Update existing managed object
