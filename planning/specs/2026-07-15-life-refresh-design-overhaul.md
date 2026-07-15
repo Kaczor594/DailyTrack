@@ -2,7 +2,7 @@
 created: 2026-07-15
 modified: [2026-07-15]
 sessions: [2026-07-15]
-commits: [bce0b18, 52eec55, 4383777, b566bd3, c2631ef, 84e4621]
+commits: [bce0b18, 52eec55, 4383777, b566bd3, c2631ef, 84e4621, 5ef0af4]
 back_refs:
   - CLAUDE_HANDOFF.md#next-steps
   - https://claude.ai/design/p/e686602b-8427-4a34-b26d-b75aa54cb714 (Isaac Kaczor Design System — colors_and_type.css is source of truth; README there is stale blue/Inter direction)
@@ -124,13 +124,13 @@ Final weights: Municipal 4.0 (unchanged, top work priority), GC Vorbereitung 2.0
 
 ## Phase 6 — Widget restyle
 
-- [ ] Delete 3 local color helpers (`scoreColor` :308, `progressColor` :384, `barColor` :467) → `Theme.scoreColor` (fixes 0.3/0.7 vs 0.4/0.7/0.9 threshold drift)
-- [ ] `containerBackground(Theme.background, for: .widget)` (3 places); ring track Divider; % Fraunces; names Geist; values mono; checkbox done Positive / pending InkTertiary; flame Terra; bars ThemePanel track + scoreColor fill radius 3
-- [ ] Fix period-task value display: show derived daily target instead of `Int(value)/Int(benchmark)` when task `hasPeriod` (small WidgetTaskItem addition)
+- [x] Deleted 3 local color helpers → `Theme.scoreColor` (fixes 0.3/0.7 vs 0.4/0.7/0.9 threshold drift)
+- [x] `containerBackground(Theme.background, for: .widget)` (3 places); ring track Divider; % Fraunces; names Geist; values mono; checkbox done Positive / pending InkTertiary; flame Terra; bars ThemePanel track + scoreColor fill radius 3
+- [x] Fixed period-task value display: `WidgetTaskItem.dailyTarget` added; rows show value/derived-daily-target (e.g. "1.5/2.8") instead of "0/87"
 
 **Validation (gate):**
-- `xcodebuild -scheme DailyTrackWidgetExtension -destination 'platform=macOS' build 2>&1 | tail -3` → `** BUILD SUCCEEDED **` + both app builds
-- Manual: small/medium/large via Notification Center (WidgetKit Simulator broken on Mac), light + dark
+- [x] `xcodebuild -scheme DailyTrackWidgetExtension -destination 'platform=macOS' build CODE_SIGNING_ALLOWED=NO` → `** BUILD SUCCEEDED **` + both app builds (2026-07-15)
+- [ ] Manual: small/medium/large via Notification Center (WidgetKit Simulator broken on Mac), light + dark (user check)
 
 ## Phase 7 — Monthly/yearly anchors in task editor
 

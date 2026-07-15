@@ -20,6 +20,9 @@ struct WidgetTaskItem: Identifiable {
     let ratio: Double
     let benchmark: Double
     let value: Double
+    /// Derived per-day target for period-cumulative tasks (benchmark / period days);
+    /// nil for plain daily tasks.
+    var dailyTarget: Double? = nil
 }
 
 // MARK: - Recent Day Score (for large widget history)
@@ -136,11 +139,13 @@ struct DailyTrackTimelineProvider: TimelineProvider {
                 let entry = entryMap[task.id]
                 let value = entry?.value ?? 0
                 let ratio: Double
+                var derivedDailyTarget: Double? = nil
                 if task.isCheckbox {
                     ratio = value > 0 ? 1.0 : 0.0
                 } else if task.hasPeriod, let pw = periodWindow(for: task, on: today) {
                     let dailyTarget = task.benchmark / Double(pw.periodDays)
                     ratio = dailyTarget > 0 ? value / dailyTarget : 0
+                    derivedDailyTarget = dailyTarget
                 } else {
                     ratio = task.benchmark > 0 ? value / task.benchmark : 0
                 }
@@ -152,7 +157,8 @@ struct DailyTrackTimelineProvider: TimelineProvider {
                     isCompleted: value > 0,
                     ratio: ratio,
                     benchmark: task.benchmark,
-                    value: value
+                    value: value,
+                    dailyTarget: derivedDailyTarget
                 ))
 
                 totalWeight += task.weight
@@ -287,30 +293,22 @@ struct ScoreRingView: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(Color.gray.opacity(0.2), lineWidth: lineWidth)
+                .stroke(Theme.divider, lineWidth: lineWidth)
 
             Circle()
                 .trim(from: 0, to: min(score, 1.0))
                 .stroke(
-                    scoreColor,
+                    Theme.scoreColor(score),
                     style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
                 .animation(.easeInOut(duration: 0.5), value: score)
 
             Text("\(Int(score * 100))%")
-                .font(.system(size: size * 0.25, weight: .bold, design: .rounded))
-                .foregroundColor(scoreColor)
+                .font(Theme.displaySemiBold(size * 0.25))
+                .foregroundStyle(Theme.scoreColor(score))
         }
         .frame(width: size, height: size)
-    }
-
-    private var scoreColor: Color {
-        switch score {
-        case 0..<0.3: return .red
-        case 0.3..<0.7: return .orange
-        default: return .green
-        }
     }
 }
 
@@ -322,10 +320,10 @@ struct StreakView: View {
     var body: some View {
         HStack(spacing: 2) {
             Image(systemName: "flame.fill")
-                .foregroundColor(streak > 0 ? .orange : .gray)
+                .foregroundStyle(streak > 0 ? Theme.terra : Theme.inkTertiary)
             Text("\(streak)")
-                .font(.system(.caption, design: .rounded))
-                .fontWeight(.semibold)
+                .font(Theme.monoMedium(12))
+                .foregroundStyle(Theme.ink)
         }
     }
 }
@@ -341,7 +339,7 @@ struct TaskRowView: View {
             if task.isCheckbox {
                 Button(intent: ToggleTaskIntent(taskId: task.id)) {
                     Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                        .foregroundColor(task.isCompleted ? .green : .gray)
+                        .foregroundStyle(task.isCompleted ? Theme.positive : Theme.inkTertiary)
                         .font(.system(size: compact ? 16 : 20))
                 }
                 .buttonStyle(.plain)
@@ -350,18 +348,26 @@ struct TaskRowView: View {
             }
 
             Text(task.name)
-                .font(.system(size: compact ? 12 : 14, weight: .medium))
+                .font(Theme.bodyMedium(compact ? 12 : 14))
                 .lineLimit(1)
-                .foregroundColor(.primary)
+                .foregroundStyle(Theme.ink)
 
             Spacer()
 
             if !task.isCheckbox && !compact {
-                Text("\(Int(task.value))/\(Int(task.benchmark))")
-                    .font(.system(size: 11, design: .rounded))
-                    .foregroundColor(.secondary)
+                // Period tasks show progress against the derived daily target,
+                // not the full period benchmark (e.g. "1.5/2.8", not "0/87").
+                let target = task.dailyTarget ?? task.benchmark
+                Text("\(formatShort(task.value))/\(formatShort(target))")
+                    .font(Theme.mono(11))
+                    .foregroundStyle(Theme.inkSecondary)
             }
         }
+    }
+
+    private func formatShort(_ n: Double) -> String {
+        if n == n.rounded() { return String(Int(n)) }
+        return String(format: "%.1f", n)
     }
 }
 
@@ -372,21 +378,13 @@ struct ProgressCircle: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(Color.gray.opacity(0.3), lineWidth: 2)
+                .stroke(Theme.divider, lineWidth: 2)
             Circle()
-                .trim(from: 0, to: ratio)
-                .stroke(progressColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                .trim(from: 0, to: min(ratio, 1.0))
+                .stroke(Theme.scoreColor(ratio), style: StrokeStyle(lineWidth: 2, lineCap: .round))
                 .rotationEffect(.degrees(-90))
         }
         .frame(width: size, height: size)
-    }
-
-    private var progressColor: Color {
-        switch ratio {
-        case 0..<0.3: return .red
-        case 0.3..<0.7: return .orange
-        default: return .green
-        }
     }
 }
 
@@ -401,7 +399,7 @@ struct SmallWidgetView: View {
 
             StreakView(streak: entry.streak)
         }
-        .containerBackground(.fill.tertiary, for: .widget)
+        .containerBackground(Theme.background, for: .widget)
     }
 }
 
@@ -425,14 +423,14 @@ struct MediumWidgetView: View {
 
                 if entry.tasks.isEmpty {
                     Text("No tasks for today")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(Theme.body(11))
+                        .foregroundStyle(Theme.inkSecondary)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, 4)
-        .containerBackground(.fill.tertiary, for: .widget)
+        .containerBackground(Theme.background, for: .widget)
     }
 }
 
@@ -445,30 +443,22 @@ struct DayScoreBar: View {
     var body: some View {
         VStack(spacing: 4) {
             Text("\(Int(day.score * 100))%")
-                .font(.system(size: 10, weight: .medium, design: .rounded))
-                .foregroundColor(.secondary)
+                .font(Theme.mono(10))
+                .foregroundStyle(Theme.inkSecondary)
 
             ZStack(alignment: .bottom) {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.gray.opacity(0.15))
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Theme.panel)
                     .frame(width: 28, height: maxHeight)
 
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(barColor(for: day.score))
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Theme.scoreColor(day.score))
                     .frame(width: 28, height: max(2, maxHeight * min(day.score, 1.0)))
             }
 
             Text(day.label)
-                .font(.system(size: 11, weight: .medium, design: .rounded))
-                .foregroundColor(.secondary)
-        }
-    }
-
-    private func barColor(for score: Double) -> Color {
-        switch score {
-        case 0..<0.3: return .red
-        case 0.3..<0.7: return .orange
-        default: return .green
+                .font(Theme.bodyMedium(11))
+                .foregroundStyle(Theme.inkSecondary)
         }
     }
 }
@@ -483,8 +473,8 @@ struct LargeWidgetView: View {
             // Today's progress section
             VStack(spacing: 8) {
                 Text("Today's Progress")
-                    .font(.system(.subheadline, design: .rounded))
-                    .foregroundColor(.secondary)
+                    .font(Theme.body(12))
+                    .foregroundStyle(Theme.inkSecondary)
 
                 ScoreRingView(score: entry.score, size: 100, lineWidth: 9)
 
@@ -496,13 +486,13 @@ struct LargeWidgetView: View {
             // Last 5 days section
             VStack(spacing: 8) {
                 Text("Last 5 Days")
-                    .font(.system(.subheadline, design: .rounded))
-                    .foregroundColor(.secondary)
+                    .font(Theme.body(12))
+                    .foregroundStyle(Theme.inkSecondary)
 
                 if entry.recentScores.isEmpty {
                     Text("No history yet")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(Theme.body(11))
+                        .foregroundStyle(Theme.inkSecondary)
                         .frame(maxHeight: .infinity)
                 } else {
                     HStack(spacing: 12) {
@@ -515,7 +505,7 @@ struct LargeWidgetView: View {
 
             Spacer(minLength: 0)
         }
-        .containerBackground(.fill.tertiary, for: .widget)
+        .containerBackground(Theme.background, for: .widget)
     }
 }
 
