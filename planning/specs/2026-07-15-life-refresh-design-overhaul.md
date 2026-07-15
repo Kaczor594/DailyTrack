@@ -2,7 +2,7 @@
 created: 2026-07-15
 modified: [2026-07-15]
 sessions: [2026-07-15]
-commits: [bce0b18]
+commits: [bce0b18, 52eec55]
 back_refs:
   - CLAUDE_HANDOFF.md#next-steps
   - https://claude.ai/design/p/e686602b-8427-4a34-b26d-b75aa54cb714 (Isaac Kaczor Design System — colors_and_type.css is source of truth; README there is stale blue/Inter direction)
@@ -76,15 +76,15 @@ Final weights: Municipal 4.0 (unchanged, top work priority), GC Vorbereitung 2.0
 
 ## Phase 2 — SeedData.swift matches new reality
 
-- [ ] Remove `seed-bewerben` block + all `("Bewerben", n)` tuples from `historicalData`
-- [ ] Municipal: benchmark 87.5, unit hours, weight 3.0, isCumulative true, cumulativePeriod "month"
-- [ ] Add `seed-gc-vorbereitung` (same ID as server row), benchmark 1.0, weight 2.0, sortOrder 3
-- [ ] Putzen/Schach-Lesen weight 0.5; fix Putzen `isCheckbox` staleness vs server if snapshot showed a difference
-- [ ] Append `("2026-07-10", [("Municipal Analytics", 9.5)])` to historicalData (name-keyed lookup unchanged — no renames)
+- [x] Remove `seed-bewerben` block + all `("Bewerben", n)` tuples from `historicalData`
+- [x] Municipal: benchmark 87.5, weight 4.0 (amended), isCumulative true, cumulativePeriod "month"
+- [x] Add `seed-gc-vorbereitung` (same ID as server row), benchmark 1.0, weight 2.0, sortOrder 17 (amended)
+- [x] ~~Putzen/Schach-Lesen weight 0.5~~ dropped per amendment (minimal touch)
+- [x] Append `("2026-07-10", [("Municipal Analytics", 9.5)])` to historicalData (name-keyed lookup unchanged — no renames)
 
 **Validation (gate):**
-- `cd DailyTrack && xcodebuild -scheme DailyTrack -destination 'platform=macOS' build 2>&1 | tail -3` → `** BUILD SUCCEEDED **`
-- `cd DailyTrack && xcodebuild -scheme DailyTrack -destination 'generic/platform=iOS Simulator' build 2>&1 | tail -3` → `** BUILD SUCCEEDED **`
+- [x] `cd DailyTrack && xcodebuild -scheme DailyTrack -destination 'platform=macOS' build CODE_SIGNING_ALLOWED=NO 2>&1 | tail -3` → `** BUILD SUCCEEDED **` (note: `CODE_SIGNING_ALLOWED=NO` required for headless builds — no Mac App Development provisioning profile outside Xcode)
+- [x] `cd DailyTrack && xcodebuild -scheme DailyTrack -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO 2>&1 | tail -3` → `** BUILD SUCCEEDED **`
 
 ## Phase 3 — Sync error banner + pull-to-refresh
 
