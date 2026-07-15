@@ -43,7 +43,8 @@ struct DailyView: View {
                         Spacer()
 
                         Text(viewModel.displayDate)
-                            .font(.headline)
+                            .font(Theme.bodySemiBold(15))
+                            .foregroundStyle(Theme.ink)
 
                         Spacer()
 
@@ -82,6 +83,7 @@ struct DailyView: View {
                 }
                 .padding(.vertical)
             }
+            .background(Theme.background)
             .refreshable {
                 await syncManager.sync(context: modelContext)
                 viewModel.loadData(context: modelContext)
@@ -124,15 +126,15 @@ struct SyncErrorBanner: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.red)
+                .foregroundStyle(Theme.negative)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(String(localized: "Sync failed"))
-                    .font(.caption)
-                    .fontWeight(.semibold)
+                    .font(Theme.bodySemiBold(12))
+                    .foregroundStyle(Theme.ink)
                 Text(message)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .font(Theme.body(11))
+                    .foregroundStyle(Theme.inkSecondary)
                     .lineLimit(2)
             }
 
@@ -141,7 +143,7 @@ struct SyncErrorBanner: View {
             Button(String(localized: "Retry")) {
                 onRetry()
             }
-            .font(.caption)
+            .font(Theme.bodyMedium(12))
             .buttonStyle(.bordered)
 
             Button {
@@ -149,13 +151,17 @@ struct SyncErrorBanner: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.inkSecondary)
             }
             .buttonStyle(.plain)
         }
         .padding(10)
-        .background(Color.red.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .background(Theme.terraSubtle)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.radiusCard))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.radiusCard)
+                .stroke(Theme.divider, lineWidth: 1)
+        )
     }
 }
 
@@ -170,13 +176,13 @@ struct DailyScoreCard: View {
         VStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .stroke(Color.gray.opacity(0.2), lineWidth: 12)
+                    .stroke(Theme.divider, lineWidth: 12)
                     .frame(width: 120, height: 120)
 
                 Circle()
                     .trim(from: 0, to: min(score, 1.0))
                     .stroke(
-                        scoreColor,
+                        Theme.scoreColor(score),
                         style: StrokeStyle(lineWidth: 12, lineCap: .round)
                     )
                     .frame(width: 120, height: 120)
@@ -185,29 +191,21 @@ struct DailyScoreCard: View {
 
                 VStack(spacing: 2) {
                     Text("\(Int(score * 100))%")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(Theme.displaySemiBold(30))
+                        .foregroundStyle(Theme.ink)
                     Text(dateLabel)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .font(Theme.body(11))
+                        .foregroundStyle(Theme.inkSecondary)
                 }
             }
 
             if streak > 0 {
                 Label("\(streak) \(String(localized: "day streak"))", systemImage: "flame.fill")
-                    .font(.subheadline)
-                    .foregroundStyle(.orange)
+                    .font(Theme.bodyMedium(14))
+                    .foregroundStyle(Theme.terra)
             }
         }
         .padding()
-    }
-
-    private var scoreColor: Color {
-        switch score {
-        case 0..<0.4: return .red
-        case 0.4..<0.7: return .orange
-        case 0.7..<0.9: return .yellow
-        default: return .green
-        }
     }
 }
 
@@ -226,30 +224,30 @@ struct TaskRowView: View {
             // Header: task name + completion badge
             HStack {
                 Text(progress.task.name)
-                    .font(.headline)
+                    .font(Theme.bodySemiBold(15))
+                    .foregroundStyle(Theme.ink)
 
                 Spacer()
 
                 // Completion percentage badge
                 Text("\(Int(progress.scoringRatio * 100))%")
-                    .font(.caption)
-                    .fontWeight(.semibold)
+                    .font(Theme.monoMedium(11))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(badgeColor.opacity(0.15))
-                    .foregroundStyle(badgeColor)
-                    .clipShape(Capsule())
+                    .background(Theme.scoreColor(progress.scoringRatio).opacity(0.15))
+                    .foregroundStyle(Theme.scoreColor(progress.scoringRatio))
+                    .clipShape(RoundedRectangle(cornerRadius: Theme.radiusControl))
             }
 
             // Progress bar
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.gray.opacity(0.15))
+                    RoundedRectangle(cornerRadius: Theme.radiusBar)
+                        .fill(Theme.panel)
                         .frame(height: 6)
 
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(badgeColor)
+                    RoundedRectangle(cornerRadius: Theme.radiusBar)
+                        .fill(Theme.scoreColor(progress.scoringRatio))
                         .frame(width: geo.size.width * min(progress.scoringRatio, 1.0), height: 6)
                         .animation(.easeInOut(duration: 0.3), value: progress.scoringRatio)
                 }
@@ -264,8 +262,8 @@ struct TaskRowView: View {
                         set: { _ in onToggle() }
                     )) {
                         Text(progress.task.unit.isEmpty ? String(localized: "Complete") : progress.task.unit)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(Theme.body(13))
+                            .foregroundStyle(Theme.inkSecondary)
                     }
                 } else {
                     TextField("0", text: $inputText)
@@ -283,12 +281,12 @@ struct TaskRowView: View {
                     if progress.task.hasPeriod, let pd = progress.periodDays, pd > 0 {
                         let dailyTarget = progress.task.benchmark / Double(pd)
                         Text("/ \(formatNumber(dailyTarget)) \(progress.task.unit)")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(Theme.mono(13))
+                            .foregroundStyle(Theme.inkSecondary)
                     } else {
                         Text("/ \(formatNumber(progress.task.benchmark)) \(progress.task.unit)")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(Theme.mono(13))
+                            .foregroundStyle(Theme.inkSecondary)
                     }
                 }
 
@@ -298,28 +296,30 @@ struct TaskRowView: View {
                 if let periodText = progress.periodProgressText {
                     VStack(alignment: .trailing) {
                         Text(periodText)
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.blue)
+                            .font(Theme.monoMedium(11))
+                            .foregroundStyle(Theme.brand)
                     }
                 }
                 // Lifetime cumulative badge for non-period cumulative tasks
                 else if let cumRatio = progress.cumulativeRatio, !progress.task.hasPeriod {
                     VStack(alignment: .trailing) {
                         Text(String(localized: "Cumulative"))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .font(Theme.body(10))
+                            .foregroundStyle(Theme.inkSecondary)
                         Text("\(Int(cumRatio * 100))%")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.blue)
+                            .font(Theme.monoMedium(11))
+                            .foregroundStyle(Theme.info)
                     }
                 }
             }
         }
         .padding()
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.radiusCard))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.radiusCard)
+                .stroke(Theme.divider, lineWidth: 1)
+        )
         .onAppear {
             inputText = progress.entry.value == 0 ? "" : formatNumber(progress.entry.value)
         }
@@ -333,16 +333,6 @@ struct TaskRowView: View {
     private func commitValue() {
         let value = Double(inputText.replacingOccurrences(of: ",", with: ".")) ?? 0
         onValueChanged(value)
-    }
-
-    private var badgeColor: Color {
-        switch progress.scoringRatio {
-        case 0: return .gray
-        case 0..<0.5: return .red
-        case 0.5..<1.0: return .orange
-        case 1.0...: return .green
-        default: return .green
-        }
     }
 
     private func formatNumber(_ n: Double) -> String {

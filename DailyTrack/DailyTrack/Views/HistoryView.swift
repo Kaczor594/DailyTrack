@@ -59,6 +59,7 @@ struct HistoryView: View {
                 }
                 .padding(.vertical)
             }
+            .background(Theme.background)
             .navigationTitle(String(localized: "History"))
             .onAppear {
                 viewModel.loadData(context: modelContext)
@@ -88,28 +89,28 @@ struct StatsCardsView: View {
                 value: "\(currentStreak)",
                 unit: String(localized: "days"),
                 icon: "flame.fill",
-                color: .orange
+                color: Theme.terra
             )
             StatCard(
                 title: String(localized: "Best Streak"),
                 value: "\(bestStreak)",
                 unit: String(localized: "days"),
                 icon: "trophy.fill",
-                color: .yellow
+                color: Theme.chartDust
             )
             StatCard(
                 title: String(localized: "Average Score"),
                 value: "\(Int(averageScore * 100))%",
                 unit: "",
                 icon: "chart.bar.fill",
-                color: .blue
+                color: Theme.chartSky
             )
             StatCard(
                 title: String(localized: "Days Tracked"),
                 value: "\(totalDays)",
                 unit: "",
                 icon: "calendar",
-                color: .green
+                color: Theme.brand
             )
         }
         .padding(.horizontal)
@@ -130,23 +131,28 @@ struct StatCard: View {
                 .foregroundStyle(color)
 
             Text(value)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .font(Theme.displaySemiBold(24))
+                .foregroundStyle(Theme.ink)
 
             if !unit.isEmpty {
                 Text(unit)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .font(Theme.body(11))
+                    .foregroundStyle(Theme.inkSecondary)
             }
 
             Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(Theme.body(12))
+                .foregroundStyle(Theme.inkSecondary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
         .padding()
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.radiusCard))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.radiusCard)
+                .stroke(Theme.divider, lineWidth: 1)
+        )
     }
 }
 
@@ -186,7 +192,8 @@ struct TrendChartView: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text(String(localized: "Daily Completion"))
-                .font(.headline)
+                .font(Theme.bodySemiBold(15))
+                .foregroundStyle(Theme.ink)
 
             if chartData.isEmpty {
                 ContentUnavailableView(
@@ -203,7 +210,7 @@ struct TrendChartView: View {
                     )
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [.blue.opacity(0.3), .blue.opacity(0.05)],
+                            colors: [Theme.chartMoss.opacity(0.25), Theme.chartMoss.opacity(0.03)],
                             startPoint: .top,
                             endPoint: .bottom
                         )
@@ -213,32 +220,36 @@ struct TrendChartView: View {
                         x: .value("Date", item.date),
                         y: .value("Score", item.score)
                     )
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Theme.chartMoss)
                     .lineStyle(StrokeStyle(lineWidth: 2))
 
                     PointMark(
                         x: .value("Date", item.date),
                         y: .value("Score", item.score)
                     )
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Theme.chartMoss)
                     .symbolSize(20)
 
                     if let selected = selectedItem, selected.date == item.date {
                         RuleMark(x: .value("Date", selected.date))
-                            .foregroundStyle(.gray.opacity(0.5))
+                            .foregroundStyle(Theme.inkTertiary)
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                             .annotation(position: .top, alignment: .center) {
                                 VStack(spacing: 4) {
                                     Text(displayFormatter.string(from: selected.date))
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
+                                        .font(Theme.body(11))
+                                        .foregroundStyle(Theme.inkSecondary)
                                     Text("\(Int(selected.score * 100))%")
-                                        .font(.caption)
-                                        .fontWeight(.bold)
+                                        .font(Theme.monoMedium(12))
+                                        .foregroundStyle(Theme.ink)
                                 }
                                 .padding(8)
-                                .background(.regularMaterial)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .background(Theme.surface)
+                                .clipShape(RoundedRectangle(cornerRadius: Theme.radiusControl))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: Theme.radiusControl)
+                                        .stroke(Theme.divider, lineWidth: 1)
+                                )
                             }
                     }
                 }
@@ -248,6 +259,8 @@ struct TrendChartView: View {
                         AxisValueLabel {
                             if let v = value.as(Double.self) {
                                 Text("\(Int(v * 100))%")
+                                    .font(Theme.mono(10))
+                                    .foregroundStyle(Theme.inkSecondary)
                             }
                         }
                         AxisGridLine()
@@ -296,7 +309,8 @@ struct CalendarHeatmapView: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text(String(localized: "Calendar"))
-                .font(.headline)
+                .font(Theme.bodySemiBold(15))
+                .foregroundStyle(Theme.ink)
 
             LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(Array(dates.enumerated()), id: \.offset) { _, date in
@@ -304,13 +318,13 @@ struct CalendarHeatmapView: View {
                         let dateStr = dateFormatter.string(from: date)
                         let score = data[dateStr]
 
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(colorForScore(score))
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Theme.heatmapColor(score: score))
                             .aspectRatio(1, contentMode: .fit)
                             .overlay {
                                 Text("\(Calendar.current.component(.day, from: date))")
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundStyle(score != nil ? .white : .secondary)
+                                    .font(Theme.monoMedium(10))
+                                    .foregroundStyle(score != nil ? Theme.heatmapLabelColor(score: score) : Theme.inkTertiary)
                             }
                             .onTapGesture {
                                 onDateTap(dateStr)
@@ -324,16 +338,6 @@ struct CalendarHeatmapView: View {
         }
     }
 
-    private func colorForScore(_ score: Double?) -> Color {
-        guard let s = score else { return Color.gray.opacity(0.1) }
-        switch s {
-        case 0: return .red.opacity(0.3)
-        case 0..<0.4: return .red.opacity(0.6)
-        case 0.4..<0.7: return .orange
-        case 0.7..<0.9: return .yellow.opacity(0.8)
-        default: return .green
-        }
-    }
 }
 
 // MARK: - Task Breakdown
@@ -345,42 +349,38 @@ struct TaskBreakdownView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "Task Breakdown — \(date)"))
-                .font(.headline)
+                .font(Theme.bodySemiBold(15))
+                .foregroundStyle(Theme.ink)
 
             ForEach(scores, id: \.task.id) { item in
                 HStack {
                     Text(item.task.name)
-                        .font(.subheadline)
+                        .font(Theme.body(14))
+                        .foregroundStyle(Theme.ink)
 
                     Spacer()
 
                     Text(formatNumber(item.value))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(Theme.mono(13))
+                        .foregroundStyle(Theme.inkSecondary)
 
                     Text("\(Int(min(item.ratio, 1.0) * 100))%")
-                        .font(.caption)
-                        .fontWeight(.semibold)
+                        .font(Theme.monoMedium(11))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(colorForRatio(item.ratio).opacity(0.15))
-                        .foregroundStyle(colorForRatio(item.ratio))
-                        .clipShape(Capsule())
+                        .background(Theme.scoreColor(item.ratio).opacity(0.15))
+                        .foregroundStyle(Theme.scoreColor(item.ratio))
+                        .clipShape(RoundedRectangle(cornerRadius: Theme.radiusControl))
                 }
             }
         }
         .padding()
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
-
-    private func colorForRatio(_ r: Double) -> Color {
-        switch r {
-        case 0: return .gray
-        case 0..<0.5: return .red
-        case 0.5..<1.0: return .orange
-        default: return .green
-        }
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.radiusCard))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.radiusCard)
+                .stroke(Theme.divider, lineWidth: 1)
+        )
     }
 
     private func formatNumber(_ n: Double) -> String {

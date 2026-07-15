@@ -2,7 +2,7 @@
 created: 2026-07-15
 modified: [2026-07-15]
 sessions: [2026-07-15]
-commits: [bce0b18, 52eec55, 4383777, b566bd3, c2631ef]
+commits: [bce0b18, 52eec55, 4383777, b566bd3, c2631ef, 84e4621]
 back_refs:
   - CLAUDE_HANDOFF.md#next-steps
   - https://claude.ai/design/p/e686602b-8427-4a34-b26d-b75aa54cb714 (Isaac Kaczor Design System — colors_and_type.css is source of truth; README there is stale blue/Inter direction)
@@ -113,14 +113,14 @@ Final weights: Municipal 4.0 (unchanged, top work priority), GC Vorbereitung 2.0
 
 ## Phase 5 — App restyle (light + dark)
 
-- [ ] DailyView: ring track ThemeDivider, fill scoreColor, % in Fraunces; cards ThemeSurface + 8pt radius + 1px hairline (drop `.regularMaterial`); delete local `scoreColor` + `badgeColor`; flame→Terra, period badges→Brand/Info; numerals mono; bg ThemeBackground; banner (Phase 3) → Negative/TerraSubtle styling
-- [ ] HistoryView: StatCards (flame Terra, trophy Dust, avg Sky, days Brand); trend chart moss line, moss 0.25→0.03 area, mono axis labels; heatmap → `Theme.heatmapColor` (delete `colorForScore`); breakdown → `Theme.scoreColor` (delete `colorForRatio`)
-- [ ] SettingsView: themed list bg, badges BrandSubtle/Info at 4pt, checkmark Positive, error Negative, headers Geist
+- [x] DailyView: ring track ThemeDivider, fill scoreColor, % in Fraunces; cards ThemeSurface + 8pt radius + 1px hairline (drop `.regularMaterial`); deleted local `scoreColor` + `badgeColor`; flame→Terra, period badges→Brand/Info; numerals mono; bg ThemeBackground; banner → Negative/TerraSubtle
+- [x] HistoryView: StatCards (flame Terra, trophy Dust, avg Sky, days Brand); trend chart moss line + 0.25→0.03 area, mono axis labels; heatmap → `Theme.heatmapColor` (deleted `colorForScore`); breakdown → `Theme.scoreColor` (deleted `colorForRatio`)
+- [x] SettingsView: themed list bg + `.listRowBackground(Theme.surface)` on all sections, badges BrandSubtle/Info at 4pt, checkmark Positive, error Negative, headers Geist
 
 **Validation (gate):**
-- Both xcodebuild commands → `** BUILD SUCCEEDED **`
-- `grep -rn "Color\.red\|Color\.orange\|Color\.green\|\.foregroundStyle(\.blue)\|\.foregroundStyle(\.orange)\|\.foregroundStyle(\.red)\|\.foregroundStyle(\.green)\|\.foregroundStyle(\.purple)" DailyTrack/DailyTrack/Views/` → no output (exit 1)
-- Manual: light + dark pass on all three tabs (Mac)
+- [x] Both xcodebuild commands → `** BUILD SUCCEEDED **` (2026-07-15)
+- [x] leftover-color-literal grep over Views/ → no output (exit 1)
+- [ ] Manual: light + dark pass on all three tabs (user check — not run headless to avoid touching live App Group data with an unsigned build)
 
 ## Phase 6 — Widget restyle
 

@@ -34,7 +34,9 @@ struct SettingsView: View {
                     }
                 } header: {
                     Text("Tasks")
+                        .font(Theme.bodyMedium(12))
                 }
+                .listRowBackground(Theme.surface)
 
                 // Cloud Sync section
                 Section {
@@ -85,14 +87,16 @@ struct SettingsView: View {
                     if let error = syncManager.lastError {
                         Text(error)
                             .font(.caption)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Theme.negative)
                     }
                 } header: {
                     Text(String(localized: "Cloud Sync"))
+                        .font(Theme.bodyMedium(12))
                 } footer: {
                     Text(String(localized: "Enter your Cloudflare Worker URL and token to sync between devices."))
                         .font(.caption2)
                 }
+                .listRowBackground(Theme.surface)
 
                 Section {
                     Button {
@@ -108,11 +112,15 @@ struct SettingsView: View {
                     }
                 } header: {
                     Text("Configuration File")
+                        .font(Theme.bodyMedium(12))
                 } footer: {
                     Text(String(localized: "Tasks are saved at: \(viewModel.configFilePath().path)"))
                         .font(.caption2)
                 }
+                .listRowBackground(Theme.surface)
             }
+            .scrollContentBackground(.hidden)
+            .background(Theme.background)
             .navigationTitle(String(localized: "Settings"))
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
@@ -189,9 +197,9 @@ struct TaskDefinitionRow: View {
                             .font(.caption2)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(.blue.opacity(0.15))
-                            .foregroundStyle(.blue)
-                            .clipShape(Capsule())
+                            .background(Theme.brandSubtle)
+                            .foregroundStyle(Theme.brand)
+                            .clipShape(RoundedRectangle(cornerRadius: Theme.radiusControl))
                     }
 
                     if task.isCheckbox {
@@ -199,9 +207,9 @@ struct TaskDefinitionRow: View {
                             .font(.caption2)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(.purple.opacity(0.15))
-                            .foregroundStyle(.purple)
-                            .clipShape(Capsule())
+                            .background(Theme.info.opacity(0.15))
+                            .foregroundStyle(Theme.info)
+                            .clipShape(RoundedRectangle(cornerRadius: Theme.radiusControl))
                     }
                 }
 
@@ -219,7 +227,7 @@ struct TaskDefinitionRow: View {
                 onToggleActive()
             } label: {
                 Image(systemName: task.isActive ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(task.isActive ? .green : .gray)
+                    .foregroundStyle(task.isActive ? Theme.positive : Theme.inkTertiary)
             }
             .buttonStyle(.plain)
         }
