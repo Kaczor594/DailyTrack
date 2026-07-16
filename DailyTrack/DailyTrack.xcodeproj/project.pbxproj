@@ -56,16 +56,15 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"Fonts/Fraunces72pt-Regular.ttf",
-				"Fonts/Fraunces72pt-SemiBold.ttf",
 				"Fonts/Geist-Medium.ttf",
 				"Fonts/Geist-Regular.ttf",
-				"Fonts/Geist-SemiBold.ttf",
 				"Fonts/GeistMono-Medium.ttf",
 				"Fonts/GeistMono-Regular.ttf",
 				Localization/Localizable.xcstrings,
 				Models/DailyEntry.swift,
 				Models/TaskDefinition.swift,
 				Shared/AppGroupContainer.swift,
+				Shared/Formatters.swift,
 				Shared/PeriodWindow.swift,
 				Theme/Components.swift,
 				Theme/FontRegistration.swift,

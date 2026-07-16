@@ -31,7 +31,7 @@ struct HistoryView: View {
                         scores: viewModel.dailyScores,
                         selectedPeriod: $viewModel.selectedPeriod,
                         onPeriodChange: {
-                            viewModel.loadData(context: modelContext)
+                            viewModel.loadData(context: modelContext, recomputeStreak: false)
                         }
                     )
 
@@ -119,27 +119,41 @@ struct HistoryKPIStrip: View {
 
 /// Chart card in the four-element structure: eyebrow + title, field, source.
 struct TrendChartCard: View {
-    let scores: [(date: String, score: Double)]
     @Binding var selectedPeriod: HistoryViewModel.Period
     var onPeriodChange: () -> Void
 
     @State private var selectedChartDate: Date?
 
-    private let dateFormatter: DateFormatter = {
+    private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         return f
     }()
 
-    private let displayFormatter: DateFormatter = {
+    private static let displayFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateStyle = .medium
         return f
     }()
 
-    var chartData: [(date: Date, score: Double)] {
-        scores.compactMap { item in
-            guard let date = dateFormatter.date(from: item.date) else { return nil }
+    private static let rangeStartFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "dd.MM."
+        return f
+    }()
+
+    // Parsed once per parent render, not per body evaluation
+    private let chartData: [(date: Date, score: Double)]
+
+    init(
+        scores: [(date: String, score: Double)],
+        selectedPeriod: Binding<HistoryViewModel.Period>,
+        onPeriodChange: @escaping () -> Void
+    ) {
+        self._selectedPeriod = selectedPeriod
+        self.onPeriodChange = onPeriodChange
+        self.chartData = scores.compactMap { item in
+            guard let date = Self.dateFormatter.date(from: item.date) else { return nil }
             return (date, item.score)
         }
     }
@@ -254,14 +268,12 @@ struct TrendChartCard: View {
 
     private var sourceText: String {
         if let selected = selectedItem {
-            return "\(displayFormatter.string(from: selected.date)) · \(Int(selected.score * 100))%"
+            return "\(Self.displayFormatter.string(from: selected.date)) · \(Int(selected.score * 100))%"
         }
         guard let first = chartData.first, let last = chartData.last else {
             return "n = 0"
         }
-        let f = DateFormatter()
-        f.dateFormat = "dd.MM."
-        return "n = \(chartData.count) · \(f.string(from: first.date))–\(displayFormatter.string(from: last.date))"
+        return "n = \(chartData.count) · \(Self.rangeStartFormatter.string(from: first.date))–\(Self.displayFormatter.string(from: last.date))"
     }
 }
 
@@ -269,10 +281,9 @@ struct TrendChartCard: View {
 
 struct CalendarHeatmapCard: View {
     let data: [String: Double]
-    let period: HistoryViewModel.Period
     var onDateTap: (String) -> Void
 
-    private let dateFormatter: DateFormatter = {
+    private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         return f
@@ -287,7 +298,13 @@ struct CalendarHeatmapCard: View {
         return symbols
     }
 
-    var dates: [Date?] {
+    // Built once per parent render, not per body evaluation
+    private let dates: [Date?]
+
+    init(data: [String: Double], period: HistoryViewModel.Period, onDateTap: @escaping (String) -> Void) {
+        self.data = data
+        self.onDateTap = onDateTap
+
         var cal = Calendar(identifier: .gregorian)
         cal.firstWeekday = 1 // Sunday = 1
         let end = Date()
@@ -303,7 +320,7 @@ struct CalendarHeatmapCard: View {
             result.append(current)
             current = cal.date(byAdding: .day, value: 1, to: current)!
         }
-        return result
+        self.dates = result
     }
 
     var body: some View {
@@ -320,7 +337,7 @@ struct CalendarHeatmapCard: View {
 
                 ForEach(Array(dates.enumerated()), id: \.offset) { _, date in
                     if let date = date {
-                        let dateStr = dateFormatter.string(from: date)
+                        let dateStr = Self.dateFormatter.string(from: date)
                         let score = data[dateStr]
 
                         RoundedRectangle(cornerRadius: 2)
@@ -369,7 +386,7 @@ struct TaskBreakdownCard: View {
 
                     Spacer()
 
-                    Text(formatNumber(item.value))
+                    Text(decimalString(item.value))
                         .font(Theme.mono(13))
                         .foregroundStyle(Theme.inkSecondary)
 
@@ -388,10 +405,6 @@ struct TaskBreakdownCard: View {
         .workbenchCard()
     }
 
-    private func formatNumber(_ n: Double) -> String {
-        if n == n.rounded() { return String(Int(n)) }
-        return String(format: "%.1f", n)
-    }
 }
 
 #Preview {

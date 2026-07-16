@@ -42,7 +42,9 @@ final class HistoryViewModel {
         return f
     }()
 
-    func loadData(context: ModelContext) {
+    /// Pass `recomputeStreak: false` on period switches — the current streak is
+    /// period-independent, so the full-table refetch can be skipped.
+    func loadData(context: ModelContext, recomputeStreak: Bool = true) {
         self.modelContext = context
 
         tasks = fetchActiveTasks(context: context)
@@ -96,7 +98,9 @@ final class HistoryViewModel {
             totalDaysTracked = 0
         }
 
-        currentStreak = computeCurrentStreak(context: context)
+        if recomputeStreak {
+            currentStreak = computeCurrentStreak(context: context)
+        }
         bestStreak = calculateBestStreak()
     }
 

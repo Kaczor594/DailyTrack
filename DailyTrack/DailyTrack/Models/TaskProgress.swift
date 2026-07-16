@@ -26,21 +26,11 @@ struct TaskProgress: Identifiable {
         return dailyRatio
     }
 
-    /// Formatted display of daily progress
-    var dailyProgressText: String {
-        if task.isCheckbox {
-            return entry.value > 0 ? String(localized: "Done") : String(localized: "Not done")
-        }
-        let valueStr = formatNumber(entry.value)
-        let benchStr = formatNumber(task.benchmark)
-        return "\(valueStr) / \(benchStr) \(task.unit)"
-    }
-
     /// Period progress text, e.g. "7/10 this week"
     var periodProgressText: String? {
         guard task.hasPeriod, let total = cumulativeTotal else { return nil }
-        let totalStr = formatNumber(total)
-        let benchStr = formatNumber(task.benchmark)
+        let totalStr = decimalString(total)
+        let benchStr = decimalString(task.benchmark)
         let periodLabel: String
         switch task.cumulativePeriod ?? "none" {
         case "week": periodLabel = String(localized: "this week")
@@ -58,10 +48,4 @@ struct TaskProgress: Identifiable {
         return total / task.benchmark
     }
 
-    private func formatNumber(_ n: Double) -> String {
-        if n == n.rounded() {
-            return String(Int(n))
-        }
-        return String(format: "%.1f", n)
-    }
 }

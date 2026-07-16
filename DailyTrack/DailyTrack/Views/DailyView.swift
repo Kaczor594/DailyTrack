@@ -319,7 +319,7 @@ struct TaskRowView: View {
                             onCommit: commitValue
                         )
 
-                        Text("/ \(formatNumber(dailyTarget)) \(progress.task.unit)")
+                        Text("/ \(decimalString(dailyTarget)) \(progress.task.unit)")
                             .font(Theme.mono(13))
                             .foregroundStyle(Theme.inkSecondary)
 
@@ -338,11 +338,11 @@ struct TaskRowView: View {
         .padding(12)
         .padding(.leading, 2)
         .onAppear {
-            inputText = progress.entry.value == 0 ? "" : formatNumber(progress.entry.value)
+            inputText = progress.entry.value == 0 ? "" : decimalString(progress.entry.value)
         }
         .onChange(of: progress.entry.value) { _, newValue in
             if !isFocused {
-                inputText = newValue == 0 ? "" : formatNumber(newValue)
+                inputText = newValue == 0 ? "" : decimalString(newValue)
             }
         }
     }
@@ -360,10 +360,6 @@ struct TaskRowView: View {
         onValueChanged(value)
     }
 
-    private func formatNumber(_ n: Double) -> String {
-        if n == n.rounded() { return String(Int(n)) }
-        return String(format: "%.1f", n)
-    }
 }
 
 /// Plain mono numeric field with a hairline underline — a form blank,

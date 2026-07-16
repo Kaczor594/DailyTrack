@@ -211,8 +211,8 @@ struct TaskDefinitionRow: View {
                 }
 
                 HStack(spacing: 12) {
-                    Label(String(localized: "Goal: \(formatNumber(task.benchmark)) \(task.unit)"), systemImage: "target")
-                    Label(String(localized: "Weight: \(formatNumber(task.weight))"), systemImage: "scalemass")
+                    Label(String(localized: "Goal: \(decimalString(task.benchmark)) \(task.unit)"), systemImage: "target")
+                    Label(String(localized: "Weight: \(decimalString(task.weight))"), systemImage: "scalemass")
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -231,10 +231,6 @@ struct TaskDefinitionRow: View {
         .opacity(task.isActive ? 1.0 : 0.6)
     }
 
-    private func formatNumber(_ n: Double) -> String {
-        if n == n.rounded() { return String(Int(n)) }
-        return String(format: "%.1f", n)
-    }
 }
 
 // MARK: - Task Editor Sheet

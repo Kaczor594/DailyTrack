@@ -120,11 +120,14 @@ struct DailyTrackTimelineProvider: TimelineProvider {
             )
             let tasks = (try? context.fetch(taskDescriptor)) ?? []
 
-            // Fetch today's entries
-            let entryDescriptor = FetchDescriptor<DailyEntry>(
-                predicate: #Predicate { $0.date == todayStr && $0.deleted == false }
-            )
-            let entries = (try? context.fetch(entryDescriptor)) ?? []
+            // Fetch all entries once; today's rows, streak, and recent scores share the index
+            let allEntries: [DailyEntry] = (try? context.fetch(FetchDescriptor<DailyEntry>())) ?? []
+            var dateEntries: [String: [DailyEntry]] = [:]
+            for entry in allEntries where !entry.deleted {
+                dateEntries[entry.date, default: []].append(entry)
+            }
+
+            let entries = dateEntries[todayStr] ?? []
             let entryMap = Dictionary(entries.compactMap { e in
                 e.task.map { ($0.id, e) }
             }, uniquingKeysWith: { first, _ in first })
@@ -167,8 +170,8 @@ struct DailyTrackTimelineProvider: TimelineProvider {
 
             let score = totalWeight > 0 ? weightedSum / totalWeight : 0
             let scoringTasks = tasks.filter { !$0.isCumulative || $0.hasPeriod }
-            let streak = computeStreak(context: context, tasks: scoringTasks)
-            let recentScores = computeRecentScores(context: context, tasks: scoringTasks, days: 5)
+            let streak = computeStreak(dateEntries: dateEntries, tasks: scoringTasks)
+            let recentScores = computeRecentScores(dateEntries: dateEntries, tasks: scoringTasks, days: 5)
 
             return DailyTrackEntry(
                 date: Date(),
@@ -182,18 +185,11 @@ struct DailyTrackTimelineProvider: TimelineProvider {
         }
     }
 
-    private func computeStreak(context: ModelContext, tasks: [TaskDefinition], threshold: Double = 0.7) -> Int {
+    private func computeStreak(dateEntries: [String: [DailyEntry]], tasks: [TaskDefinition], threshold: Double = 0.7) -> Int {
         guard !tasks.isEmpty else { return 0 }
 
         let totalWeight = tasks.reduce(0.0) { $0 + $1.weight }
         guard totalWeight > 0 else { return 0 }
-
-        let allEntries: [DailyEntry] = (try? context.fetch(FetchDescriptor<DailyEntry>())) ?? []
-
-        var dateEntries: [String: [DailyEntry]] = [:]
-        for entry in allEntries where !entry.deleted {
-            dateEntries[entry.date, default: []].append(entry)
-        }
 
         var dateScores: [String: Double] = [:]
         for (date, entries) in dateEntries {
@@ -230,7 +226,7 @@ struct DailyTrackTimelineProvider: TimelineProvider {
         return streak
     }
 
-    private func computeRecentScores(context: ModelContext, tasks: [TaskDefinition], days: Int) -> [RecentDayScore] {
+    private func computeRecentScores(dateEntries: [String: [DailyEntry]], tasks: [TaskDefinition], days: Int) -> [RecentDayScore] {
         guard !tasks.isEmpty else { return [] }
 
         let totalWeight = tasks.reduce(0.0) { $0 + $1.weight }
@@ -241,12 +237,6 @@ struct DailyTrackTimelineProvider: TimelineProvider {
 
         let dayLabelFormatter = DateFormatter()
         dayLabelFormatter.dateFormat = "EEE" // e.g. "Mon"
-
-        let allEntries: [DailyEntry] = (try? context.fetch(FetchDescriptor<DailyEntry>())) ?? []
-        var dateEntries: [String: [DailyEntry]] = [:]
-        for entry in allEntries where !entry.deleted {
-            dateEntries[entry.date, default: []].append(entry)
-        }
 
         var results: [RecentDayScore] = []
         for offset in (1...days).reversed() {
@@ -284,18 +274,6 @@ struct DailyTrackTimelineProvider: TimelineProvider {
 }
 
 // MARK: - Shared widget pieces
-
-/// Grain-textured paper background for all widget families.
-struct WidgetPaperBackground: View {
-    var body: some View {
-        ZStack {
-            Theme.background
-            Image("GrainTexture")
-                .resizable(resizingMode: .tile)
-                .opacity(0.35)
-        }
-    }
-}
 
 /// Score block: eyebrow, big tabular score, meter.
 struct ScoreBlock: View {
@@ -338,7 +316,7 @@ struct StreakStamp: View {
 
 // MARK: - Task Row View
 
-struct TaskRowView: View {
+struct WidgetTaskRow: View {
     let task: WidgetTaskItem
     let compact: Bool
 
@@ -364,17 +342,13 @@ struct TaskRowView: View {
                 // Period tasks show progress against the derived daily target,
                 // not the full period benchmark (e.g. "1.5/2.8", not "0/87").
                 let target = task.dailyTarget ?? task.benchmark
-                Text("\(formatShort(task.value))/\(formatShort(target))")
+                Text("\(decimalString(task.value))/\(decimalString(target))")
                     .font(Theme.mono(compact ? 10 : 11))
                     .foregroundStyle(Theme.inkSecondary)
             }
         }
     }
 
-    private func formatShort(_ n: Double) -> String {
-        if n == n.rounded() { return String(Int(n)) }
-        return String(format: "%.1f", n)
-    }
 }
 
 // MARK: - Small Widget View
@@ -411,7 +385,7 @@ struct SmallWidgetView: View {
             }
             .padding(.top, 8)
         }
-        .containerBackground(for: .widget) { WidgetPaperBackground() }
+        .containerBackground(for: .widget) { GrainTile() }
     }
 }
 
@@ -433,7 +407,7 @@ struct MediumWidgetView: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 ForEach(entry.tasks.prefix(4)) { task in
-                    TaskRowView(task: task, compact: true)
+                    WidgetTaskRow(task: task, compact: true)
                 }
 
                 if entry.tasks.isEmpty {
@@ -444,7 +418,7 @@ struct MediumWidgetView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .containerBackground(for: .widget) { WidgetPaperBackground() }
+        .containerBackground(for: .widget) { GrainTile() }
     }
 }
 
@@ -494,7 +468,7 @@ struct LargeWidgetView: View {
             // Task ledger
             VStack(alignment: .leading, spacing: 7) {
                 ForEach(entry.tasks.prefix(6)) { task in
-                    TaskRowView(task: task, compact: false)
+                    WidgetTaskRow(task: task, compact: false)
                 }
 
                 if entry.tasks.isEmpty {
@@ -525,7 +499,7 @@ struct LargeWidgetView: View {
                 }
             }
         }
-        .containerBackground(for: .widget) { WidgetPaperBackground() }
+        .containerBackground(for: .widget) { GrainTile() }
     }
 }
 

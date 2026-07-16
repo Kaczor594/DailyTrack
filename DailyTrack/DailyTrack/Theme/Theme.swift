@@ -26,19 +26,13 @@ enum Theme {
     static let terraSubtle = Color("ThemeTerraSubtle")
     static let positive = Color("ThemePositive")
     static let negative = Color("ThemeNegative")
-    static let warning = Color("ThemeWarning")
     static let info = Color("ThemeInfo")
 
-    // MARK: - Chart series (use in order; moss is the focal series)
+    // MARK: - Chart colors (single-series app; the full ordered data palette
+    // lives in kaczor-design tokens.css if multi-series charts ever come)
 
     static let chartMoss = Color("ChartMoss")
-    static let chartTerra = Color("ChartTerra")
-    static let chartSky = Color("ChartSky")
     static let chartDust = Color("ChartDust")
-    static let chartStone = Color("ChartStone")
-    static let chartSage = Color("ChartSage")
-
-    static let chartSeries: [Color] = [chartMoss, chartTerra, chartSky, chartDust, chartStone, chartSage]
 
     // MARK: - Score color (single source of truth for app + widget)
 
@@ -77,7 +71,6 @@ enum Theme {
 
     static let radiusCard: CGFloat = 6
     static let radiusControl: CGFloat = 4
-    static let radiusBar: CGFloat = 2
 
     // MARK: - Type (bundled fonts; Font.custom degrades to system on failure)
 
@@ -87,10 +80,6 @@ enum Theme {
         .custom("Fraunces72pt-Regular", size: size)
     }
 
-    static func displaySemiBold(_ size: CGFloat) -> Font {
-        .custom("Fraunces72pt-SemiBold", size: size)
-    }
-
     /// Sans body/UI — Geist.
     static func body(_ size: CGFloat) -> Font {
         .custom("Geist-Regular", size: size)
@@ -98,10 +87,6 @@ enum Theme {
 
     static func bodyMedium(_ size: CGFloat) -> Font {
         .custom("Geist-Medium", size: size)
-    }
-
-    static func bodySemiBold(_ size: CGFloat) -> Font {
-        .custom("Geist-SemiBold", size: size)
     }
 
     /// Mono — tabular numerals anywhere a number is read against another.

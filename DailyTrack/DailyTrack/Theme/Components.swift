@@ -129,6 +129,23 @@ struct SquareCheckGlyph: View {
     }
 }
 
+// MARK: - Grain tile
+
+/// Paper grain over a base color — the fill behind every workbench surface.
+struct GrainTile: View {
+    var base: Color = Theme.background
+    var opacity: Double = 0.35
+
+    var body: some View {
+        ZStack {
+            base
+            Image("GrainTexture")
+                .resizable(resizingMode: .tile)
+                .opacity(opacity)
+        }
+    }
+}
+
 // MARK: - Workbench card
 
 /// Paper card: surface fill + grain + hairline + small radius.
@@ -139,12 +156,7 @@ struct WorkbenchCard: ViewModifier {
         content
             .padding(padded ? 14 : 0)
             .background {
-                ZStack {
-                    Theme.surface
-                    Image("GrainTexture")
-                        .resizable(resizingMode: .tile)
-                        .opacity(0.5)
-                }
+                GrainTile(base: Theme.surface, opacity: 0.5)
             }
             .clipShape(RoundedRectangle(cornerRadius: Theme.radiusCard))
             .overlay(
@@ -165,13 +177,8 @@ extension View {
 /// Full-page paper background with grain.
 struct PaperBackground: View {
     var body: some View {
-        ZStack {
-            Theme.background
-            Image("GrainTexture")
-                .resizable(resizingMode: .tile)
-                .opacity(0.35)
-        }
-        .ignoresSafeArea()
+        GrainTile()
+            .ignoresSafeArea()
     }
 }
 
