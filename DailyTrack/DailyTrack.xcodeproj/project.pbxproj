@@ -55,11 +55,11 @@
 		F251A5C82F32D14D00C7D823 /* Exceptions for "DailyTrack" folder in "DailyTrackWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				"Fonts/Fraunces72pt-Regular.ttf",
-				"Fonts/Geist-Medium.ttf",
-				"Fonts/Geist-Regular.ttf",
-				"Fonts/GeistMono-Medium.ttf",
-				"Fonts/GeistMono-Regular.ttf",
+				"Fonts/Archivo-Medium.ttf",
+				"Fonts/Archivo-Regular.ttf",
+				"Fonts/IBMPlexMono-Medium.ttf",
+				"Fonts/IBMPlexMono-Regular.ttf",
+				"Fonts/Spectral-Regular.ttf",
 				Localization/Localizable.xcstrings,
 				Models/DailyEntry.swift,
 				Models/TaskDefinition.swift,

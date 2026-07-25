@@ -1,7 +1,7 @@
 import CoreText
 import Foundation
 
-/// Registers the bundled design-system fonts (Fraunces, Geist, Geist Mono)
+/// Registers the bundled design-system fonts (Spectral, Archivo, IBM Plex Mono)
 /// for the current process. Works identically on iOS, macOS, and inside the
 /// widget extension — call once from the app's and the widget bundle's init.
 enum FontRegistration {

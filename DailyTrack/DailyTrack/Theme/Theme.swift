@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Design-system tokens for DailyTrack (Isaac Kaczor design system:
-/// paper + stone + moss natural palette, Fraunces/Geist/Geist Mono).
+/// paper + stone + moss natural palette, Spectral/Archivo/IBM Plex Mono).
 /// Colors resolve from Theme.xcassets (light + dark appearances).
 /// Shared between the main app and the widget extension.
 enum Theme {
@@ -74,27 +74,28 @@ enum Theme {
 
     // MARK: - Type (bundled fonts; Font.custom degrades to system on failure)
 
-    /// Serif display — headers, the score number. Fraunces 72pt optical, weight 400
-    /// (per the design system, serif weight lives in the forms, not the stroke).
+    /// Serif display — headers, the score number. Spectral, weight 400 (per the
+    /// design system, serif weight lives in the forms, not the stroke). Static
+    /// face: no optical-size or softness axis to set.
     static func display(_ size: CGFloat) -> Font {
-        .custom("Fraunces72pt-Regular", size: size)
+        .custom("Spectral-Regular", size: size)
     }
 
-    /// Sans body/UI — Geist.
+    /// Sans body/UI — Archivo.
     static func body(_ size: CGFloat) -> Font {
-        .custom("Geist-Regular", size: size)
+        .custom("Archivo-Regular", size: size)
     }
 
     static func bodyMedium(_ size: CGFloat) -> Font {
-        .custom("Geist-Medium", size: size)
+        .custom("Archivo-Medium", size: size)
     }
 
     /// Mono — tabular numerals anywhere a number is read against another.
     static func mono(_ size: CGFloat) -> Font {
-        .custom("GeistMono-Regular", size: size)
+        .custom("IBMPlexMono-Regular", size: size)
     }
 
     static func monoMedium(_ size: CGFloat) -> Font {
-        .custom("GeistMono-Medium", size: size)
+        .custom("IBMPlexMono-Medium", size: size)
     }
 }
