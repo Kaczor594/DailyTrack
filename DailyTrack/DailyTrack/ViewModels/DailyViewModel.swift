@@ -231,6 +231,11 @@ final class DailyViewModel {
         var streak = 0
         var expectedDate = Calendar.current.startOfDay(for: Date())
         while true {
+            // Sunday is a rest day: it neither counts toward the streak nor breaks it.
+            if isRestDay(expectedDate) {
+                expectedDate = Calendar.current.date(byAdding: .day, value: -1, to: expectedDate)!
+                continue
+            }
             let dateStr = dateFormatter.string(from: expectedDate)
             guard let score = dateScores[dateStr], score >= threshold else { break }
             streak += 1

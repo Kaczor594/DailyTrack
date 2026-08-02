@@ -1,5 +1,19 @@
 import Foundation
 
+/// Working days per week. Sunday is a rest day (Bavarian Sonntagsruhe), so a
+/// weekly benchmark is spread over six days rather than seven and Sunday is
+/// excluded from streaks and the average score.
+///
+/// The period *window* still spans all seven calendar days, so hours logged on
+/// a Sunday still count toward the week's cumulative total — only the derived
+/// daily target and the streak/average stats treat the week as six days.
+let weeklyScoringDays = 6
+
+/// Whether `date` falls on the weekly rest day (Sunday, `Calendar.weekday == 1`).
+func isRestDay(_ date: Date) -> Bool {
+    Calendar.current.component(.weekday, from: date) == 1
+}
+
 /// Computes the start/end date range and day count for a cumulative task's
 /// period window (weekly/monthly/yearly) containing `date`. Returns nil for
 /// non-cumulative tasks or tasks whose `cumulativePeriod` is nil/"none".
@@ -26,7 +40,7 @@ func periodWindow(for task: TaskDefinition, on date: Date) -> (startDateStr: Str
         return (
             startDateStr: periodWindowDateFormatter.string(from: start),
             endDateStr: periodWindowDateFormatter.string(from: end),
-            periodDays: 7
+            periodDays: weeklyScoringDays
         )
     }
 
@@ -84,7 +98,10 @@ func periodWindow(for task: TaskDefinition, on date: Date) -> (startDateStr: Str
     }
     guard let interval = calendar.dateInterval(of: component, for: date) else { return nil }
     let endDate = calendar.date(byAdding: .day, value: -1, to: interval.end)!
-    let days = calendar.dateComponents([.day], from: interval.start, to: interval.end).day ?? 1
+    // Weeks are scored over six working days; months/years use their real length.
+    let days = period == "week"
+        ? weeklyScoringDays
+        : (calendar.dateComponents([.day], from: interval.start, to: interval.end).day ?? 1)
     return (
         startDateStr: periodWindowDateFormatter.string(from: interval.start),
         endDateStr: periodWindowDateFormatter.string(from: endDate),

@@ -89,14 +89,16 @@ final class HistoryViewModel {
             return (date, weightedSum / totalWeight)
         }.sorted { $0.date < $1.date }
 
-        // Stats
-        if !dailyScores.isEmpty {
-            averageScore = dailyScores.reduce(0) { $0 + $1.score } / Double(dailyScores.count)
-            totalDaysTracked = dailyScores.count
-        } else {
-            averageScore = 0
-            totalDaysTracked = 0
+        // Stats. The average excludes Sundays — they're rest days, not missed
+        // days, so a deliberate 0 shouldn't drag the mean down. totalDaysTracked
+        // still counts every day with data.
+        let scoredDays = dailyScores.filter { day in
+            dateFormatter.date(from: day.date).map { !isRestDay($0) } ?? true
         }
+        averageScore = scoredDays.isEmpty
+            ? 0
+            : scoredDays.reduce(0) { $0 + $1.score } / Double(scoredDays.count)
+        totalDaysTracked = dailyScores.count
 
         if recomputeStreak {
             currentStreak = computeCurrentStreak(context: context)
@@ -117,15 +119,24 @@ final class HistoryViewModel {
         var current = 0
         let threshold = 0.7
 
-        let sorted = dailyScores.sorted { $0.date < $1.date }
+        // Drop Sundays, then treat the Sat->Mon gap they leave behind as
+        // contiguous so a rest day can't cut a best streak in half.
+        let sorted = dailyScores
+            .compactMap { entry -> (date: Date, score: Double)? in
+                guard let d = dateFormatter.date(from: entry.date), !isRestDay(d) else { return nil }
+                return (d, entry.score)
+            }
+            .sorted { $0.date < $1.date }
         var previousDate: Date?
 
         for entry in sorted {
-            guard let date = dateFormatter.date(from: entry.date) else { continue }
+            let date = entry.date
 
             if let prev = previousDate {
                 let dayDiff = Calendar.current.dateComponents([.day], from: prev, to: date).day ?? 0
-                if dayDiff == 1 && entry.score >= threshold {
+                let bridgesRestDay = dayDiff == 2
+                    && Calendar.current.date(byAdding: .day, value: 1, to: prev).map(isRestDay) == true
+                if (dayDiff == 1 || bridgesRestDay) && entry.score >= threshold {
                     current += 1
                 } else if entry.score >= threshold {
                     current = 1
@@ -180,6 +191,11 @@ final class HistoryViewModel {
         var streak = 0
         var expectedDate = Calendar.current.startOfDay(for: Date())
         while true {
+            // Sunday is a rest day: it neither counts toward the streak nor breaks it.
+            if isRestDay(expectedDate) {
+                expectedDate = Calendar.current.date(byAdding: .day, value: -1, to: expectedDate)!
+                continue
+            }
             let dateStr = dateFormatter.string(from: expectedDate)
             guard let score = dateScores[dateStr], score >= threshold else { break }
             streak += 1
