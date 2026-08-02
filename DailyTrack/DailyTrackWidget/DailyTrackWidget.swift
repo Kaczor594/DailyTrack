@@ -143,12 +143,12 @@ struct DailyTrackTimelineProvider: TimelineProvider {
                 let value = entry?.value ?? 0
                 let ratio: Double
                 var derivedDailyTarget: Double? = nil
-                if task.isCheckbox {
-                    ratio = value > 0 ? 1.0 : 0.0
-                } else if task.hasPeriod, let pw = periodWindow(for: task, on: today) {
+                if task.hasPeriod, let pw = periodWindow(for: task, on: today) {
                     let dailyTarget = task.benchmark / Double(pw.periodDays)
                     ratio = dailyTarget > 0 ? value / dailyTarget : 0
                     derivedDailyTarget = dailyTarget
+                } else if task.isCheckbox {
+                    ratio = value > 0 ? 1.0 : 0.0
                 } else {
                     ratio = task.benchmark > 0 ? value / task.benchmark : 0
                 }
@@ -202,11 +202,11 @@ struct DailyTrackTimelineProvider: TimelineProvider {
             for task in tasks {
                 let value = entryMap[task.id]?.value ?? 0
                 let ratio: Double
-                if task.isCheckbox {
-                    ratio = value > 0 ? 1.0 : 0.0
-                } else if task.hasPeriod, let pw = periodWindow(for: task, on: entryDate) {
+                if task.hasPeriod, let pw = periodWindow(for: task, on: entryDate) {
                     let dailyTarget = task.benchmark / Double(pw.periodDays)
                     ratio = dailyTarget > 0 ? value / dailyTarget : 0
+                } else if task.isCheckbox {
+                    ratio = value > 0 ? 1.0 : 0.0
                 } else {
                     ratio = task.benchmark > 0 ? value / task.benchmark : 0
                 }
@@ -253,11 +253,11 @@ struct DailyTrackTimelineProvider: TimelineProvider {
             for task in tasks {
                 let value = entryMap[task.id]?.value ?? 0
                 let ratio: Double
-                if task.isCheckbox {
-                    ratio = value > 0 ? 1.0 : 0.0
-                } else if task.hasPeriod, let pw = periodWindow(for: task, on: date) {
+                if task.hasPeriod, let pw = periodWindow(for: task, on: date) {
                     let dailyTarget = task.benchmark / Double(pw.periodDays)
                     ratio = dailyTarget > 0 ? value / dailyTarget : 0
+                } else if task.isCheckbox {
+                    ratio = value > 0 ? 1.0 : 0.0
                 } else {
                     ratio = task.benchmark > 0 ? value / task.benchmark : 0
                 }

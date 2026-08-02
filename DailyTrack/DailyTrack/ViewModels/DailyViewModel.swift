@@ -124,10 +124,14 @@ final class DailyViewModel {
 
         let weightedSum = scoringTasks.reduce(0.0) { sum, progress in
             let ratio: Double
-            if progress.task.isCheckbox {
-                ratio = progress.entry.value > 0 ? 1.0 : 0.0
-            } else if progress.task.hasPeriod {
+            // Period tasks score against their derived daily target first —
+            // including checkbox ones, so a once-a-week tick earns its full
+            // weekly share instead of a flat single-day credit while its
+            // weight sits in the denominator all seven days.
+            if progress.task.hasPeriod {
                 ratio = progress.scoringRatio
+            } else if progress.task.isCheckbox {
+                ratio = progress.entry.value > 0 ? 1.0 : 0.0
             } else {
                 ratio = progress.dailyRatio
             }
@@ -210,11 +214,11 @@ final class DailyViewModel {
             for task in scoringTasks {
                 let value = entryMap[task.id]?.value ?? 0
                 let ratio: Double
-                if task.isCheckbox {
-                    ratio = value > 0 ? 1.0 : 0.0
-                } else if task.hasPeriod, let pw = periodWindow(for: task, on: entryDate) {
+                if task.hasPeriod, let pw = periodWindow(for: task, on: entryDate) {
                     let dailyTarget = task.benchmark / Double(pw.periodDays)
                     ratio = dailyTarget > 0 ? value / dailyTarget : 0
+                } else if task.isCheckbox {
+                    ratio = value > 0 ? 1.0 : 0.0
                 } else {
                     ratio = task.benchmark > 0 ? value / task.benchmark : 0
                 }
